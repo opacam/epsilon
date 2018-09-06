@@ -25,7 +25,7 @@ setup(
         "Framework :: Twisted",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
         "Topic :: Internet",
         "Topic :: Security",
         "Topic :: Utilities"])
