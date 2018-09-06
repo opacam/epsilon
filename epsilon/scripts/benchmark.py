@@ -5,7 +5,7 @@ Functions for running a Python file in a child process and recording resource
 usage information and other statistics about it.
 """
 
-import os, time, sys, socket, StringIO, pprint, errno
+import os, time, sys, socket, io, pprint, errno
 
 import twisted
 from twisted.python import log, filepath, failure, util
@@ -51,7 +51,7 @@ def parseDiskStatLine(L):
         factory = partitionstat
     else:
         factory = diskstat
-    return device, factory(*map(int, parts[3:]))
+    return device, factory(*list(map(int, parts[3:])))
 
 
 
@@ -354,7 +354,7 @@ hostname = socket.gethostname()
 assert hostname != 'localhost', "Fix your computro."
 
 def formatResults(name, sectorSize, before, after, error, timeout):
-    output = StringIO.StringIO()
+    output = io.StringIO()
     jj = juice.Juice(issueGreeting=False)
     tt = utils.FileWrapper(output)
     jj.makeConnection(tt)
@@ -395,7 +395,7 @@ def formatResults(name, sectorSize, before, after, error, timeout):
         write_sectors=write_sectors,
         write_ms=write_ms,
         filesystem_growth=after.size - before.size,
-        python_version=unicode(sys.hexversion),
+        python_version=str(sys.hexversion),
         twisted_version=twisted_version,
         divmod_version=epsilon_version,
         ).do(jj, requiresAnswer=False)
@@ -404,8 +404,8 @@ def formatResults(name, sectorSize, before, after, error, timeout):
 
 
 def reportResults(results):
-    print results
-    print
+    print(results)
+    print()
     fObj = file('output', 'ab')
     fObj.write(results)
     fObj.close()
@@ -447,7 +447,7 @@ def getOneSize(ch):
     """
     try:
         return ch.getsize()
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.ENOENT:
             # XXX FilePath is broken
             if os.path.islink(ch.path):
@@ -475,7 +475,7 @@ def _bench(name, workingPath, function):
             elif result.check(ProcessDied):
                 log.msg("Failing because Failure!")
                 pprint.pprint(result.value.output)
-                print result.value.exitCode, result.value.signal
+                print(result.value.exitCode, result.value.signal)
             else:
                 log.err(result)
         else:

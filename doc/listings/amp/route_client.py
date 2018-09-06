@@ -14,7 +14,7 @@ from route_server import Count
 
 
 def display(value, id):
-    print id, value
+    print(id, value)
 
 
 class CountClient(AMP):

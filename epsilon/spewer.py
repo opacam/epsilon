@@ -66,7 +66,7 @@ def extractArgs(frame):
 
 
 def formatArgs(args):
-    return ', '.join(['='.join((k, reflect.safe_repr(v))) for (k, v) in args.iteritems()])
+    return ', '.join(['='.join((k, reflect.safe_repr(v))) for (k, v) in args.items()])
 
 
 class Spewer(Tracer):
@@ -85,26 +85,26 @@ class Spewer(Tracer):
         else:
             k = ''
 
-        print ("%X %s%s%s(%s)" % (
+        print(("%X %s%s%s(%s)" % (
             id(threading.currentThread()),
             self.callDepth * ' ',
             k,
             frame.f_code.co_name,
-            formatArgs(extractArgs(frame))))
+            formatArgs(extractArgs(frame)))))
 
     def trace_RETURN(self, frame, arg):
         if arg is not None:
-            print ("%X %s<= %s" % (
+            print(("%X %s<= %s" % (
                 id(threading.currentThread()),
                 self.callDepth * ' ',
-                reflect.safe_repr(arg),))
+                reflect.safe_repr(arg),)))
         self.callDepth = max(0, self.callDepth - 1)
 
     def trace_EXCEPTION(self, frame, arg):
-        print ("%X %s^- %s" % (
+        print(("%X %s^- %s" % (
             id(threading.currentThread()),
             self.callDepth * ' ',
-            reflect.safe_repr(arg),))
+            reflect.safe_repr(arg),)))
         self.callDepth = max(0, self.callDepth - 1)
 
 
@@ -115,11 +115,11 @@ class SignalService(service.Service):
     def startService(self):
         service.Service.startService(self)
         self.oldsigmap = {}
-        for sig, handler in self.sigmap.items():
+        for sig, handler in list(self.sigmap.items()):
             self.oldsigmap[sig] = signal.signal(sig, handler)
 
     def stopService(self):
-        for sig, handler in self.oldsigmap.items():
+        for sig, handler in list(self.oldsigmap.items()):
             signal.signal(sig, handler)
         del self.oldsigmap
         service.Service.stopService(self)

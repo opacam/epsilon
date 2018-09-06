@@ -15,7 +15,7 @@ class TestCacheRegeneration(unittest.TestCase):
                 module = namedAny(modname)
                 self.removedModules.append(module)
             except:
-                print 'COULD NOT LOAD', modname
+                print('COULD NOT LOAD', modname)
         self.sysmodules = sys.modules.copy()
         self.syspath = sys.path[:]
 
@@ -33,7 +33,7 @@ class TestCacheRegeneration(unittest.TestCase):
 
     def testRegeneratingIt(self):
         for mod in self.removedModules:
-            self.failIf(mod.__name__ in sys.modules, 'Started with %r loaded: %r' % (mod.__name__, sys.path))
+            self.assertFalse(mod.__name__ in sys.modules, 'Started with %r loaded: %r' % (mod.__name__, sys.path))
         _regeneratePluginCache(['axiom', 'xmantissa'])
         log.flushErrors(ImportError) # This is necessary since there are Axiom
                                      # plugins that depend on Mantissa, so when
@@ -41,7 +41,7 @@ class TestCacheRegeneration(unittest.TestCase):
                                      # powerups are, but Mantissa isn't some
                                      # harmless tracebacks are printed.
         for mod in self.removedModules:
-            self.failIf(mod.__name__ in sys.modules, 'Loaded %r: %r' % (mod.__name__, sys.path))
+            self.assertFalse(mod.__name__ in sys.modules, 'Loaded %r: %r' % (mod.__name__, sys.path))
 
     testRegeneratingIt.skip = """
     This test really ought to be the dependency-direction test from old

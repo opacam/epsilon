@@ -20,7 +20,7 @@ def add(proto):
 
 
 def display(result):
-    print result
+    print(result)
 
 
 def main(reactor):
