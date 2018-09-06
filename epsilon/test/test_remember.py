@@ -1,8 +1,8 @@
-
 from twisted.trial.unittest import TestCase
 
 from epsilon.remember import remembered
 from epsilon.structlike import record
+
 
 class Rememberee(record("rememberer whichValue")):
     """
@@ -28,7 +28,6 @@ class Rememberer(object):
         self.invocations += 1
         return Rememberee(self, 1)
 
-
     @remembered
     def value2(self):
         """
@@ -50,7 +49,6 @@ class RememberedTests(TestCase):
         """
         self.rememberer = Rememberer()
 
-
     def test_selfArgument(self):
         """
         The "self" argument to the decorated creation function will be the
@@ -58,7 +56,6 @@ class RememberedTests(TestCase):
         """
         value = self.rememberer.value1
         self.assertIdentical(value.rememberer, self.rememberer)
-
 
     def test_onlyOneInvocation(self):
         """
@@ -71,7 +68,6 @@ class RememberedTests(TestCase):
         secondTime = self.rememberer.value1
         self.assertEqual(self.rememberer.invocations, 1)
         self.assertIdentical(firstTime, secondTime)
-
 
     def test_twoValues(self):
         """

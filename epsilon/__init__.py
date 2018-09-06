@@ -5,9 +5,13 @@ del get_versions
 
 from twisted.python import versions
 
+
 def asTwistedVersion(packageName, versionString):
-    return versions.Version(
-        packageName, *list(map(int, versionString.split('+', 1)[0].split("."))))
+    return \
+        versions.Version(
+            packageName, *list(
+                map(int, versionString.split('+', 1)[0].split("."))))
+
 
 version = asTwistedVersion("epsilon", __version__)
 

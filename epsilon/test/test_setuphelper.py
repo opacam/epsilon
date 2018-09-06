@@ -1,13 +1,15 @@
-
 import sys
 
-from twisted.trial import unittest
 from twisted.python import log
 from twisted.python.reflect import namedAny
+from twisted.trial import unittest
+
 from epsilon.setuphelper import _regeneratePluginCache
+
 
 class TestCacheRegeneration(unittest.TestCase):
     removeModules = []
+
     def setUp(self):
         self.removedModules = []
         for modname in self.removeModules:
@@ -29,19 +31,22 @@ class TestCacheRegeneration(unittest.TestCase):
                 if modname.startswith(module.__name__):
                     rem += 1
                     sys.modules.pop(modname)
-            assert rem, 'NO HITS: %r:%r' % (module,module.__name__)
+            assert rem, 'NO HITS: %r:%r' % (module, module.__name__)
 
     def testRegeneratingIt(self):
         for mod in self.removedModules:
-            self.assertFalse(mod.__name__ in sys.modules, 'Started with %r loaded: %r' % (mod.__name__, sys.path))
+            self.assertFalse(mod.__name__ in sys.modules,
+                             'Started with %r loaded: %r' % (
+                                 mod.__name__, sys.path))
         _regeneratePluginCache(['axiom', 'xmantissa'])
-        log.flushErrors(ImportError) # This is necessary since there are Axiom
-                                     # plugins that depend on Mantissa, so when
-                                     # Axiom is installed, Mantissa-dependent
-                                     # powerups are, but Mantissa isn't some
-                                     # harmless tracebacks are printed.
+        log.flushErrors(ImportError)  # This is necessary since there are Axiom
+        # plugins that depend on Mantissa, so when
+        # Axiom is installed, Mantissa-dependent
+        # powerups are, but Mantissa isn't some
+        # harmless tracebacks are printed.
         for mod in self.removedModules:
-            self.assertFalse(mod.__name__ in sys.modules, 'Loaded %r: %r' % (mod.__name__, sys.path))
+            self.assertFalse(mod.__name__ in sys.modules,
+                             'Loaded %r: %r' % (mod.__name__, sys.path))
 
     testRegeneratingIt.skip = """
     This test really ought to be the dependency-direction test from old
@@ -53,11 +58,14 @@ class TestCacheRegeneration(unittest.TestCase):
         sys.modules.clear()
         sys.modules.update(self.sysmodules)
 
+
 class WithoutAxiom(TestCacheRegeneration):
     removeModules = ['axiom']
 
+
 class WithoutMantissa(TestCacheRegeneration):
     removeModules = ['xmantissa']
+
 
 class WithoutEither(TestCacheRegeneration):
     removeModules = ['xmantissa', 'axiom']

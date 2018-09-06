@@ -8,9 +8,8 @@ multiple L{IBoxReceiver}/I{IBoxSender} pairs over a single L{AMP} connection.
 
 from itertools import count
 
-from zope.interface import implements
-
 from twisted.protocols.amp import IBoxReceiver, IBoxSender
+from zope.interface import implementer
 
 from epsilon.structlike import record
 
@@ -27,7 +26,7 @@ class RouteNotConnected(Exception):
     """
 
 
-
+@implementer(IBoxSender)
 class Route(record('router receiver localRouteName remoteRouteName',
                    remoteRouteName=_unspecified)):
     """
@@ -49,7 +48,6 @@ class Route(record('router receiver localRouteName remoteRouteName',
     @ivar remoteRouteName: The name of the route which will be added to all
         boxes sent to this sender.  If C{None}, no route will be added.
     """
-    implements(IBoxSender)
 
     def connectTo(self, remoteRouteName):
         """
@@ -62,13 +60,11 @@ class Route(record('router receiver localRouteName remoteRouteName',
         if self.router._sender is not None:
             self.start()
 
-
     def unbind(self):
         """
         Remove the association between this route and its router.
         """
         del self.router._routes[self.localRouteName]
-
 
     def start(self):
         """
@@ -76,13 +72,11 @@ class Route(record('router receiver localRouteName remoteRouteName',
         """
         self.receiver.startReceivingBoxes(self)
 
-
     def stop(self, reason):
         """
         Shut down the underlying receiver.
         """
         self.receiver.stopReceivingBoxes(reason)
-
 
     def sendBox(self, box):
         """
@@ -94,7 +88,6 @@ class Route(record('router receiver localRouteName remoteRouteName',
             box[_ROUTE] = self.remoteRouteName.encode('ascii')
         self.router._sender.sendBox(box)
 
-
     def unhandledError(self, failure):
         """
         Pass failures through to the wrapped L{IBoxSender} without
@@ -103,7 +96,7 @@ class Route(record('router receiver localRouteName remoteRouteName',
         self.router._sender.unhandledError(failure)
 
 
-
+@implementer(IBoxReceiver)
 class Router:
     """
     An L{IBoxReceiver} implementation which demultiplexes boxes from an AMP
@@ -124,7 +117,6 @@ class Router:
     @ivar _routeCounter: A L{itertools.count} instance used to generate unique
         identifiers for routes in this router.
     """
-    implements(IBoxReceiver)
 
     _routes = None
     _sender = None
@@ -132,7 +124,6 @@ class Router:
     def __init__(self):
         self._routeCounter = count()
         self._unstarted = {}
-
 
     def createRouteIdentifier(self):
         """
@@ -142,7 +133,6 @@ class Router:
         @rtype: C{unicode}
         """
         return str(next(self._routeCounter))
-
 
     def bindRoute(self, receiver, routeName=_unspecified):
         """
@@ -167,7 +157,6 @@ class Router:
         mapping[routeName] = route
         return route
 
-
     def startReceivingBoxes(self, sender):
         """
         Initialize route tracking objects.
@@ -182,7 +171,6 @@ class Router:
         self._routes = self._unstarted
         self._unstarted = None
 
-
     def ampBoxReceived(self, box):
         """
         Dispatch the given box to the L{IBoxReceiver} associated with the route
@@ -191,7 +179,6 @@ class Router:
         route = box.pop(_ROUTE, None)
         self._routes[route].receiver.ampBoxReceived(box)
 
-
     def stopReceivingBoxes(self, reason):
         """
         Stop all the L{IBoxReceiver}s which have been added to this router.
@@ -199,7 +186,6 @@ class Router:
         for routeName, route in self._routes.items():
             route.stop(reason)
         self._routes = None
-
 
 
 __all__ = ['Router', 'Route']

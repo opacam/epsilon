@@ -1,12 +1,10 @@
-
 """Utilities and helpers for simulating a network
 """
 
 from io import StringIO
 
-from twisted.internet import error
-
 from epsilon.test import utils
+from twisted.internet import error
 
 
 def readAndDestroy(iodata):
@@ -26,6 +24,7 @@ class IOPump:
 
     Perhaps this is a utility worthy of being in protocol.py?
     """
+
     def __init__(self, client, server, clientIO, serverIO, debug):
         self.client = client
         self.server = server
@@ -48,7 +47,6 @@ class IOPump:
             assert 0, "Too long"
         return result
 
-
     def pump(self, debug=False):
         """Move data back and forth.
 
@@ -65,24 +63,26 @@ class IOPump:
             # XXX slightly buggy in the face of incremental output
             if cData:
                 for line in cData.split('\r\n'):
-                    print('C: '+line)
+                    print('C: ' + line)
             if sData:
                 for line in sData.split('\r\n'):
-                    print('S: '+line)
+                    print('S: ' + line)
         if cData:
             self.server.dataReceived(cData)
         if sData:
             self.client.dataReceived(sData)
         if cData or sData:
             return True
-        if self.server.transport.disconnecting and not self.server.transport.disconnected:
+        if self.server.transport.disconnecting and not \
+                self.server.transport.disconnected:
             if self.debug or debug:
                 print('* C')
             self.server.transport.disconnected = True
             self.client.transport.disconnecting = True
             self.client.connectionLost(error.ConnectionDone("Connection done"))
             return True
-        if self.client.transport.disconnecting and not self.client.transport.disconnected:
+        if self.client.transport.disconnecting and not \
+                self.client.transport.disconnected:
             if self.debug or debug:
                 print('* S')
             self.client.transport.disconnected = True

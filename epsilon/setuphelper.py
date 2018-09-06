@@ -1,9 +1,12 @@
 # -*- test-case-name: epsilon.test.test_setuphelper -*-
 
 # For great justice, take off every zig.
-import sys, os, pprint, traceback
-
+import os
+import pprint
+import sys
+import traceback
 from distutils.core import setup
+
 
 def pluginModules(moduleNames):
     from twisted.python.reflect import namedAny
@@ -15,23 +18,27 @@ def pluginModules(moduleNames):
         except ValueError as ve:
             if ve.args[0] != 'Empty module name':
                 traceback.print_exc()
-        except:
+        except Exception as e:
             traceback.print_exc()
+
 
 def _regeneratePluginCache(pluginPackages):
     print('Regenerating cache with path: ', end=' ')
     pprint.pprint(sys.path)
     from twisted import plugin
-    for pluginModule in pluginModules([
-        p + ".plugins" for p in pluginPackages]):
+    for pluginModule in pluginModules(
+            [p + ".plugins" for p in pluginPackages]):
         # Not just *some* zigs, mind you - *every* zig:
         print('Full plugin list for %r: ' % (pluginModule.__name__))
         pprint.pprint(list(plugin.getPlugins(plugin.IPlugin, pluginModule)))
 
+
 def regeneratePluginCache(dist, pluginPackages):
     if 'install' in dist.commands:
-        sys.path.insert(0, os.path.abspath(dist.command_obj['install'].install_lib))
+        sys.path.insert(0, os.path.abspath(
+            dist.command_obj['install'].install_lib))
         _regeneratePluginCache(pluginPackages)
+
 
 def autosetup(**kw):
     packages = []
@@ -60,13 +67,15 @@ def autosetup(**kw):
             for filename in filenames:
                 if filename == 'dropin.cache':
                     continue
-                if (os.path.splitext(filename)[1] not in ('.py', '.pyc', '.pyo')
-                    or '__init__.py' not in filenames):
-                    D.append(os.path.join(dirpath[len(package)+1:], filename))
+                if (os.path.splitext(filename)[1] not in (
+                        '.py', '.pyc', '.pyo') or
+                        '__init__.py' not in filenames):
+                    D.append(
+                        os.path.join(dirpath[len(package) + 1:], filename))
     autoresult = {
         'packages': packages,
         'package_data': datafiles,
-        }
+    }
     print('Automatically determined setup() args:')
     pprint.pprint(autoresult, indent=4)
     assert 'packages' not in kw

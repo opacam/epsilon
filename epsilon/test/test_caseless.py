@@ -3,8 +3,11 @@ Tests for L{epsilon.caseless}.
 """
 
 import sys
+
 from twisted.trial.unittest import TestCase
 from epsilon.caseless import Caseless
+from epsilon.extime import cmp
+
 
 class CaselessTestCase(TestCase):
     """
@@ -19,6 +22,7 @@ class CaselessTestCase(TestCase):
         yield s.upper()
         yield s.title()
         yield s.title().swapcase()
+
     _casings = staticmethod(_casings)
 
     def _strings(self):
@@ -30,14 +34,12 @@ class CaselessTestCase(TestCase):
             for s in self._casings('foo'):
                 yield t(s)
 
-
     def test_cased(self):
         """
         L{Caseless} should expose the wrapped string as C{cased}.
         """
         for s in self._strings():
             self.assertIdentical(Caseless(s).cased, s)
-
 
     def test_idempotence(self):
         """
@@ -46,14 +48,12 @@ class CaselessTestCase(TestCase):
         for s in self._strings():
             self.assertIdentical(Caseless(Caseless(s)).cased, s)
 
-
     def test_repr(self):
         """
         L{Caseless} should implement L{repr}.
         """
         for s in self._strings():
             self.assertEqual(repr(Caseless(s)), 'Caseless(%r)' % s)
-
 
     def test_str(self):
         """
@@ -62,7 +62,6 @@ class CaselessTestCase(TestCase):
         for s in self._strings():
             self.assertEqual(str(Caseless(s)), str(s))
 
-
     def test_unicode(self):
         """
         L{Caseless} should delegate L{unicode}.
@@ -70,14 +69,12 @@ class CaselessTestCase(TestCase):
         for s in self._strings():
             self.assertEqual(str(Caseless(s)), str(s))
 
-
     def test_len(self):
         """
         L{Caseless} should delegate L{len}.
         """
         for s in self._strings():
             self.assertEqual(len(Caseless(s)), len(s))
-
 
     def test_getitem(self):
         """
@@ -90,14 +87,12 @@ class CaselessTestCase(TestCase):
                 self.assertEqual(Caseless(s)[i:], s[i:])
             self.assertEqual(Caseless(s)[::-1], s[::-1])
 
-
     def test_iter(self):
         """
         L{Caseless} should delegate L{iter}.
         """
         for s in self._strings():
             self.assertEqual(list(iter(Caseless(s))), list(iter(s)))
-
 
     def test_lower(self):
         """
@@ -106,14 +101,12 @@ class CaselessTestCase(TestCase):
         for s in self._strings():
             self.assertEqual(Caseless(s).lower(), s.lower())
 
-
     def test_upper(self):
         """
         L{Caseless} should delegate C{upper}.
         """
         for s in self._strings():
             self.assertEqual(Caseless(s).upper(), s.upper())
-
 
     def test_title(self):
         """
@@ -122,14 +115,12 @@ class CaselessTestCase(TestCase):
         for s in self._strings():
             self.assertEqual(Caseless(s).title(), s.title())
 
-
     def test_swapcase(self):
         """
         L{Caseless} should delegate C{swapcase}.
         """
         for s in self._strings():
             self.assertEqual(Caseless(s).swapcase(), s.swapcase())
-
 
     def test_comparison(self):
         """
@@ -146,7 +137,6 @@ class CaselessTestCase(TestCase):
                 self.assertNotEqual(hash(a), hash(b))
                 self.assertEqual(cmp(a, b), -1)
 
-
     def test_contains(self):
         """
         L{Caseless} should search for substrings case-insensitively.
@@ -157,7 +147,6 @@ class CaselessTestCase(TestCase):
         for a in map(Caseless, self._casings('abc')):
             for b in map(Caseless, self._casings('{{{abd}}}')):
                 self.assertNotIn(a, b)
-
 
     def test_startswith(self):
         """
@@ -176,7 +165,6 @@ class CaselessTestCase(TestCase):
                 self.assertTrue(a.startswith(b, 2))
                 self.assertFalse(a.startswith(b, 4, 6))
 
-
     def test_endswith(self):
         """
         L{Caseless} should implement C{endswith} case-insensitively.
@@ -194,7 +182,6 @@ class CaselessTestCase(TestCase):
                 self.assertTrue(a.endswith(b, 0, 3))
                 self.assertFalse(a.endswith(b, 7))
 
-
     def test_startswithTuple(self):
         """
         L{test_startswith} with tuple arguments.
@@ -211,7 +198,6 @@ class CaselessTestCase(TestCase):
                 self.assertFalse(a.startswith(('foo', b, 'bar'), 4))
                 self.assertTrue(a.startswith(('foo', b, 'bar'), 2))
                 self.assertFalse(a.startswith(('foo', b, 'bar'), 4, 6))
-
 
     def test_endswithTuple(self):
         """
@@ -234,7 +220,6 @@ class CaselessTestCase(TestCase):
         test_startswithTuple.skip = test_endswithTuple.skip = (
             'Tuple arguments implemented in Python 2.5')
 
-
     def test_count(self):
         """
         L{Caseless} should implement C{count} case-insensitively.
@@ -247,14 +232,15 @@ class CaselessTestCase(TestCase):
                 self.assertEqual(a.count(b, 3), 1)
                 self.assertEqual(a.count(b, 0, 4), 0)
 
-
     def test_findindex(self):
         """
         L{Caseless} should implement C{find}/C{index} case-insensitively.
         """
+
         def assertFound(a, b, result, rest=()):
             self.assertEqual(a.find(b, *rest), result)
             self.assertEqual(a.index(b, *rest), result)
+
         def assertNotFound(a, b, rest=()):
             self.assertEqual(a.find(b, *rest), -1)
             err = self.assertRaises(ValueError, lambda: a.index(b, *rest))
@@ -267,14 +253,15 @@ class CaselessTestCase(TestCase):
                 assertFound(a, b, rest=(1,), result=4)
                 assertNotFound(a, b, rest=(1, 6))
 
-
     def test_rfindindex(self):
         """
         L{Caseless} should implement C{rfind}/C{rindex} case-insensitively.
         """
+
         def assertFound(a, b, result, rest=()):
             self.assertEqual(a.rfind(b, *rest), result)
             self.assertEqual(a.rindex(b, *rest), result)
+
         def assertNotFound(a, b, rest=()):
             self.assertEqual(a.rfind(b, *rest), -1)
             err = self.assertRaises(ValueError, lambda: a.rindex(b, *rest))

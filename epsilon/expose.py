@@ -59,7 +59,6 @@ class NameRequired(Exception):
     """
 
 
-
 class Exposer(object):
     """
     This is an object that can expose and retrieve methods on classes.
@@ -73,7 +72,6 @@ class Exposer(object):
         """
         self.__doc__ = doc
         self._exposed = {}
-
 
     def expose(self, key=None):
         """
@@ -100,6 +98,7 @@ class Exposer(object):
         @return: a 1-argument callable which records its input as exposed, then
         returns it.
         """
+
         def decorator(function):
             rkey = key
             if rkey is None:
@@ -111,8 +110,8 @@ class Exposer(object):
                 self._exposed[rkey] = []
             self._exposed[rkey].append(function)
             return function
-        return decorator
 
+        return decorator
 
     def get(self, obj, key):
         """

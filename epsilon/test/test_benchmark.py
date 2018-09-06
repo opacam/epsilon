@@ -1,5 +1,5 @@
-
 from epsilon import hotfix
+
 hotfix.require('twisted', 'delayedcall_seconds')
 hotfix.require('twisted', 'timeoutmixin_calllater')
 
@@ -13,7 +13,6 @@ from epsilon.scripts import benchmark
 
 from epsilon import juice
 
-
 try:
     filepath.FilePath('/proc/diskstats').open().close()
     filepath.FilePath('/proc/self/mounts').open().close()
@@ -23,11 +22,9 @@ else:
     hasProc = True
 
 
-
 class DiskstatTestCase(unittest.TestCase):
     if not hasProc:
         skip = 'epsilon.benchmark requires access to /proc'
-
 
     def testDiskLineParser(self):
         """
@@ -49,7 +46,6 @@ class DiskstatTestCase(unittest.TestCase):
         self.assertEqual(stat.ioMilliseconds, 6136300)
         self.assertEqual(stat.weightedIOMilliseconds, 153333793)
 
-
     def testPartitionLineParser(self):
         """
         Test parsing the other kind of line that can show up in the diskstats
@@ -62,7 +58,6 @@ class DiskstatTestCase(unittest.TestCase):
         self.assertEqual(stat.readSectorCount, 5)
         self.assertEqual(stat.writeCount, 7)
         self.assertEqual(stat.writeSectorCount, 9)
-
 
     def testFileParser(self):
         """
@@ -100,15 +95,14 @@ class DiskstatTestCase(unittest.TestCase):
         self.assertEqual(ds[1][1].ioMilliseconds, 25)
         self.assertEqual(ds[1][1].weightedIOMilliseconds, 26)
 
-
     def testCaptureStats(self):
         """
         Test that captureStats reads out of /proc/diskstats, if it is
         available.
         """
         stats = benchmark.captureStats()
-        self.assertTrue(isinstance(stats, dict), "Expected dictionary, got %r" % (stats,))
-
+        self.assertTrue(isinstance(stats, dict),
+                        "Expected dictionary, got %r" % (stats,))
 
 
 class ReporterTestCase(unittest.TestCase):
@@ -148,7 +142,6 @@ class ReporterTestCase(unittest.TestCase):
         self.assertEqual(msg['write_sectors'], '7')
         self.assertEqual(msg['read_ms'], '10')
         self.assertEqual(msg['write_ms'], '10')
-
 
     def testFormatterWithoutDiskStats(self):
         """
@@ -192,7 +185,6 @@ class ReporterTestCase(unittest.TestCase):
 
         self.failIfIn('read_ms', msg)
         self.failIfIn('write_ms', msg)
-
 
     def testFormatterWithoutPartitionStats(self):
         """
@@ -238,22 +230,20 @@ class ReporterTestCase(unittest.TestCase):
         self.assertEqual(msg['read_ms'], '10')
         self.assertEqual(msg['write_ms'], '10')
 
-
     def testGetSize(self):
         path = self.mktemp()
         os.makedirs(path)
-        fObj = file(os.path.join(path, 'foo'), 'wb')
+        fObj = open(os.path.join(path, 'foo'), 'wb')
         fObj.write('x' * 10)
         fObj.close()
         self.assertEqual(
             benchmark.getSize(filepath.FilePath(path)),
             os.path.getsize(path) + os.path.getsize(os.path.join(path, 'foo')))
 
-
     def test_getOneSizeBrokenSymlink(self):
         """
-        Test that a broken symlink inside a directory passed to getOneSize doesn't
-        cause it to freak out.
+        Test that a broken symlink inside a directory passed to getOneSize
+        doesn't cause it to freak out.
         """
         path = filepath.FilePath(self.mktemp())
         path.makedirs()
@@ -262,7 +252,6 @@ class ReporterTestCase(unittest.TestCase):
         self.assertEqual(
             benchmark.getOneSize(link),
             len('abcdefg'))
-
 
 
 class MockSpawnProcess(object):
@@ -282,7 +271,6 @@ class MockSpawnProcess(object):
         self.childFDs = childFDs
         self.signals = []
 
-
     def signalProcess(self, signal):
         self.signals.append(signal)
         if signal == 'KILL':
@@ -290,14 +278,15 @@ class MockSpawnProcess(object):
             self.proto.processEnded(failure.Failure(error.ProcessTerminated()))
 
 
-
 class SpawnMixin:
 
     def setUp(self):
         mock = []
+
         def spawnProcess(*a, **kw):
             mock.append(MockSpawnProcess(*a, **kw))
             return mock[0]
+
         self.workingDirectory = self.mktemp()
         os.makedirs(self.workingDirectory)
         self.spawnDeferred = self.processProtocol.spawn(
@@ -318,13 +307,13 @@ class SpawnMixin:
             self.sched.sort(key=lambda d: d.getTime())
 
         def callLater(n, f, *a, **kw):
-            c = base.DelayedCall(self.currentTime + n, f, a, kw, canceller, resetter, seconds)
+            c = base.DelayedCall(self.currentTime + n, f, a, kw, canceller,
+                                 resetter, seconds)
             self.sched.append(c)
             return c
 
         self.mock.proto.callLater = callLater
         self.mock.proto.makeConnection(self.mock)
-
 
 
 class BasicProcessTestCase(SpawnMixin, unittest.TestCase):
@@ -335,7 +324,6 @@ class BasicProcessTestCase(SpawnMixin, unittest.TestCase):
         self.assertEqual(self.mock.args, ['executable', 'args'])
         self.assertEqual(self.mock.path, self.workingDirectory)
         self.assertEqual(self.mock.env, {'env': 'stuff'})
-
 
     def testChildDataReceived(self):
         self.mock.proto.childDataReceived(1, 'stdout bytes')
@@ -351,10 +339,10 @@ class BasicProcessTestCase(SpawnMixin, unittest.TestCase):
                 [(1, 'stdout bytes'),
                  (2, 'stderr bytes'),
                  (1, 'more stdout bytes')])
+
         self.spawnDeferred.addCallback(cbProcessFinished)
         self.mock.proto.processEnded(failure.Failure(error.ProcessDone(0)))
         return self.spawnDeferred
-
 
     def testTimeout(self):
         """
@@ -372,7 +360,6 @@ class BasicProcessTestCase(SpawnMixin, unittest.TestCase):
         d.addCallback(cbTimedOut)
         return d
 
-
     def testTimeoutExtended(self):
         """
         Assert that input or connection-lost events reset the timeout.
@@ -387,12 +374,12 @@ class BasicProcessTestCase(SpawnMixin, unittest.TestCase):
         self.assertEqual(len(self.sched), 1)
         self.assertEqual(self.sched[0].getTime(), 902.0)
 
-
     def testProcessKilled(self):
         """
         Assert that the spawn call's Deferred fails appropriately if someone
         else gets involved and kills the child process.
         """
+
         def cbKilled(exc):
             self.assertEqual(exc.exitCode, 1)
             self.assertEqual(exc.signal, 2)
@@ -400,23 +387,21 @@ class BasicProcessTestCase(SpawnMixin, unittest.TestCase):
             self.assertEqual(exc.output, [(1, 'bytes')])
 
         self.mock.proto.childDataReceived(1, 'bytes')
-        self.mock.proto.processEnded(failure.Failure(error.ProcessTerminated(1, 2, 3)))
+        self.mock.proto.processEnded(
+            failure.Failure(error.ProcessTerminated(1, 2, 3)))
         d = self.assertFailure(self.spawnDeferred, benchmark.ProcessDied)
         d.addCallback(cbKilled)
         return d
-
 
 
 class SnapshotTestCase(unittest.TestCase):
     if not hasProc:
         skip = 'epsilon.benchmark requires access to /proc'
 
-
     def testStart(self):
         c = benchmark.Change()
         c.start(filepath.FilePath('.'), 'hda', 'hda1')
         self.assertTrue(isinstance(c.before, benchmark.ResourceSnapshot))
-
 
     def testStop(self):
         c = benchmark.Change()
@@ -424,11 +409,9 @@ class SnapshotTestCase(unittest.TestCase):
         self.assertTrue(isinstance(c.after, benchmark.ResourceSnapshot))
 
 
-
 class BenchmarkProcessTestCase(SpawnMixin, unittest.TestCase):
     if not hasProc:
         skip = 'epsilon.benchmark requires access to /proc'
-
 
     processProtocol = benchmark.BenchmarkProcess
 
@@ -439,7 +422,6 @@ class BenchmarkProcessTestCase(SpawnMixin, unittest.TestCase):
         self.mock.proto.childDataReceived(p.BACKCHANNEL_OUT, p.START)
         self.assertEqual(started, [None])
 
-
     def testProcessStopTimingCommand(self):
         stopped = []
         p = self.mock.proto
@@ -448,11 +430,11 @@ class BenchmarkProcessTestCase(SpawnMixin, unittest.TestCase):
         self.assertEqual(stopped, [None])
 
 
-
 class DiscoverDeviceTests(unittest.TestCase):
     """
     Tests for L{discoverCurrentWorkingDevice}.
     """
+
     def test_emptyMounts(self):
         """
         If the mounts file does not have the current path, the device is

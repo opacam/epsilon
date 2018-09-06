@@ -3,8 +3,9 @@ Tests for turning simple version strings into twisted.python.versions.Version
 objects.
 
 """
-from epsilon import asTwistedVersion
 from twisted.trial.unittest import SynchronousTestCase
+
+from epsilon import asTwistedVersion
 
 
 class AsTwistedVersionTests(SynchronousTestCase):

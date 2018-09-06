@@ -2,15 +2,14 @@
 
 import random
 
+from .route_server import Count
+from .route_setup import connect
 from twisted.internet.defer import Deferred, gatherResults
 from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP
 
-from epsilon.react import react
 from epsilon.amprouter import Router
-
-from route_setup import connect
-from route_server import Count
+from epsilon.react import react
 
 
 def display(value, id):
@@ -34,7 +33,6 @@ class CountClient(AMP):
         gatherResults(counts).chainDeferred(self.finished)
 
 
-
 def makeRoutes(proto, router):
     router.bindRoute(proto, None).connectTo(None)
 
@@ -44,7 +42,6 @@ def makeRoutes(proto, router):
         finish.append(connect(proto, router, client))
         finish.append(client.finished)
     return gatherResults(finish)
-
 
 
 def main(reactor):
@@ -57,4 +54,5 @@ def main(reactor):
 
 if __name__ == '__main__':
     from twisted.internet import reactor
+
     react(reactor, main, [])

@@ -4,12 +4,13 @@
 Tests for L{epsilon.ampauth}.
 """
 
-import epsilon.hotfix
-epsilon.hotfix.require('twisted', 'loopbackasync_reentrancy')
+import epsilon.hotfix as hotfix
+
+hotfix.require('twisted', 'loopbackasync_reentrancy')
 
 from hashlib import sha1
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.interface.verify import verifyObject
 
 from twisted.python.failure import Failure
@@ -18,7 +19,7 @@ from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import InMemoryUsernamePasswordDatabaseDontUse
 from twisted.cred.credentials import UsernamePassword
 from twisted.cred.portal import Portal
-from twisted.protocols.amp import IBoxReceiver, BinaryBoxProtocol, CommandLocator, AMP
+from twisted.protocols.amp import IBoxReceiver, AMP
 from twisted.protocols.loopback import loopbackAsync
 from twisted.trial.unittest import TestCase
 
@@ -30,44 +31,38 @@ from epsilon.ampauth import (
 __metaclass__ = type
 
 
-
 class StubRealm:
     def __init__(self, avatar):
         self.avatar = avatar
         self.loggedOut = 0
         self.requests = []
 
-
     def requestAvatar(self, avatarId, mind, *interfaces):
         self.requests.append((avatarId, mind, interfaces))
         return interfaces[0], self.avatar, self.logout
-
 
     def logout(self):
         self.loggedOut += 1
 
 
-
+@implementer(IBoxReceiver)
 class StubAvatar:
     """
     An L{IBoxReceiver} implementation which can be used as an avatar by the
     L{CredReceiver} tests.
     """
-    implements(IBoxReceiver)
 
     def startReceivingBoxes(self, sender):
         self.boxSender = sender
 
-
     def ampBoxReceived(self, box):
         pass
-
 
     def stopReceivingBoxes(self, reason):
         pass
 
-verifyObject(IBoxReceiver, StubAvatar())
 
+verifyObject(IBoxReceiver, StubAvatar())
 
 
 class CredReceiverTests(TestCase):
@@ -76,13 +71,14 @@ class CredReceiverTests(TestCase):
     L{twisted.cred} to provide authentication and authorization of AMP
     connections.
     """
+
     def setUp(self):
         """
         Create a L{CredReceiver} hooked up to a fake L{IBoxSender} which
         records boxes sent through it.
         """
-        self.username = 'alice@example.com'
-        self.password = 'foo bar baz'
+        self.username = b'alice@example.com'
+        self.password = b'foo bar baz'
         self.checker = InMemoryUsernamePasswordDatabaseDontUse()
         self.checker.addUser(self.username, self.password)
         self.avatar = StubAvatar()
@@ -93,19 +89,19 @@ class CredReceiverTests(TestCase):
         self.client = AMP()
         self.finished = loopbackAsync(self.server, self.client)
 
-
     def test_otpLogin(self):
         """
         L{CredReceiver.otpLogin} returns without error if the pad is valid.
         """
-        PAD = 'test_otpLogin'
-        self.portal.registerChecker(OneTimePadChecker({PAD: 'user'}))
+        PAD = b'test_otpLogin'
+        self.portal.registerChecker(OneTimePadChecker({PAD: b'user'}))
         d = self.server.otpLogin(PAD)
+
         def cbLoggedIn(result):
             self.assertEqual(result, {})
+
         d.addCallback(cbLoggedIn)
         return d
-
 
     def test_otpLoginUnauthorized(self):
         """
@@ -114,37 +110,38 @@ class CredReceiverTests(TestCase):
         """
         self.portal.registerChecker(OneTimePadChecker({}))
         return self.assertFailure(
-            self.server.otpLogin('test_otpLoginUnauthorized'),
+            self.server.otpLogin(b'test_otpLoginUnauthorized'),
             UnauthorizedLogin)
-
 
     def test_otpLoginNotImplemented(self):
         """
         L{CredReceiver.otpLogin} should fail with L{NotImplementedError} if
         the realm raises L{NotImplementedError} when asked for the avatar.
         """
+
         def noAvatar(avatarId, mind, *interfaces):
             raise NotImplementedError()
+
         self.realm.requestAvatar = noAvatar
 
-        PAD = 'test_otpLoginNotImplemented'
-        self.portal.registerChecker(OneTimePadChecker({PAD: 'user'}))
+        PAD = b'test_otpLoginNotImplemented'
+        self.portal.registerChecker(OneTimePadChecker({PAD: b'user'}))
         return self.assertFailure(
             self.server.otpLogin(PAD), NotImplementedError)
-
 
     def test_otpLoginResponder(self):
         """
         L{CredReceiver} responds to the L{OTPLogin} command.
         """
-        PAD = 'test_otpLoginResponder'
-        self.portal.registerChecker(OneTimePadChecker({PAD: 'user'}))
+        PAD = b'test_otpLoginResponder'
+        self.portal.registerChecker(OneTimePadChecker({PAD: b'user'}))
         d = self.client.callRemote(OTPLogin, pad=PAD)
+
         def cbLoggedIn(result):
             self.assertEqual(result, {})
+
         d.addCallback(cbLoggedIn)
         return d
-
 
     def test_passwordLoginDifferentChallenges(self):
         """
@@ -155,18 +152,18 @@ class CredReceiverTests(TestCase):
         second = self.server.passwordLogin(self.username)
         self.assertNotEqual(first['challenge'], second['challenge'])
 
-
     def test_passwordLoginResponder(self):
         """
         L{CredReceiver} responds to the L{PasswordLogin} L{Command} with a
         challenge.
         """
         d = self.client.callRemote(PasswordLogin, username=self.username)
+
         def cbLogin(result):
             self.assertIn('challenge', result)
+
         d.addCallback(cbLogin)
         return d
-
 
     def test_determineFromDifferentNonces(self):
         """
@@ -177,7 +174,6 @@ class CredReceiverTests(TestCase):
         second = PasswordChallengeResponse.determineFrom('a', 'b')
         self.assertNotEqual(first['cnonce'], second['cnonce'])
 
-
     def test_passwordChallengeResponse(self):
         """
         L{CredReceiver.passwordChallengeResponse} returns without error if the
@@ -185,14 +181,15 @@ class CredReceiverTests(TestCase):
         """
         challenge = self.server.passwordLogin(self.username)['challenge']
         cnonce = '123abc'
-        cleartext = '%s %s %s' % (challenge, cnonce, self.password)
+        cleartext = b'%r %r %r' % (challenge, cnonce, self.password)
         response = sha1(cleartext).digest()
         d = self.server.passwordChallengeResponse(cnonce, response)
+
         def cbLoggedIn(result):
             self.assertEqual(result, {})
+
         d.addCallback(cbLoggedIn)
         return d
-
 
     def test_passwordChallengeResponseResponder(self):
         """
@@ -201,13 +198,15 @@ class CredReceiverTests(TestCase):
         """
         challenge = self.server.passwordLogin(self.username)['challenge']
         d = self.client.callRemote(
-            PasswordChallengeResponse, **PasswordChallengeResponse.determineFrom(
+            PasswordChallengeResponse,
+            **PasswordChallengeResponse.determineFrom(
                 challenge, self.password))
+
         def cbResponded(result):
             self.assertEqual(result, {})
+
         d.addCallback(cbResponded)
         return d
-
 
     def test_response(self):
         """
@@ -218,6 +217,7 @@ class CredReceiverTests(TestCase):
         result = PasswordChallengeResponse.determineFrom(
             challenge, self.password)
         d = self.server.passwordChallengeResponse(**result)
+
         def cbLoggedIn(ignored):
             [(avatarId, mind, interfaces)] = self.realm.requests
             self.assertEqual(avatarId, self.username)
@@ -240,7 +240,6 @@ class CredReceiverTests(TestCase):
         d.addCallback(cbLoggedIn)
         return d
 
-
     def test_invalidResponse(self):
         """
         L{CredReceiver.passwordChallengeResponse} returns a L{Deferred} which
@@ -249,9 +248,9 @@ class CredReceiverTests(TestCase):
         """
         challenge = self.server.passwordLogin(self.username)['challenge']
         return self.assertFailure(
-            self.server.passwordChallengeResponse(cnonce='bar', response='baz'),
+            self.server.passwordChallengeResponse(cnonce='bar',
+                                                  response='baz'),
             UnauthorizedLogin)
-
 
     def test_connectionLostWithoutAvatar(self):
         """
@@ -261,7 +260,6 @@ class CredReceiverTests(TestCase):
         self.server.connectionLost(
             Failure(ConnectionDone("test connection lost")))
 
-
     def test_unrecognizedCredentialsLogin(self):
         """
         L{login} raises L{UnhandledCredentials} if passed a credentials object
@@ -269,7 +267,6 @@ class CredReceiverTests(TestCase):
         currently L{IUsernamePassword}.
         """
         self.assertRaises(UnhandledCredentials, login, None, None)
-
 
     def test_passwordChallengeLogin(self):
         """
@@ -283,9 +280,9 @@ class CredReceiverTests(TestCase):
         def cbLoggedIn(clientAgain):
             self.assertIdentical(self.client, clientAgain)
             self.assertIdentical(self.server.boxReceiver, self.avatar)
+
         loginDeferred.addCallback(cbLoggedIn)
         return loginDeferred
-
 
     def test_passwordChallengeInvalid(self):
         """
@@ -295,21 +292,24 @@ class CredReceiverTests(TestCase):
         """
         boxReceiver = self.server.boxReceiver
         loginDeferred = login(
-            self.client, UsernamePassword(self.username + 'x', self.password))
+            self.client, UsernamePassword(self.username + b'x', self.password))
         self.assertFailure(loginDeferred, UnauthorizedLogin)
+
         def cbFailed(ignored):
             self.assertIdentical(self.server.boxReceiver, boxReceiver)
+
         loginDeferred.addCallback(cbFailed)
         return loginDeferred
-
 
     def test_noAvatar(self):
         """
         L{login} returns a L{Deferred} which fires with L{NotImplementedError}
         if the realm raises L{NotImplementedError} when asked for the avatar.
         """
+
         def noAvatar(avatarId, mind, *interfaces):
             raise NotImplementedError()
+
         self.realm.requestAvatar = noAvatar
 
         loginDeferred = login(
@@ -317,12 +317,12 @@ class CredReceiverTests(TestCase):
         return self.assertFailure(loginDeferred, NotImplementedError)
 
 
-
 class AMPUsernamePasswordTests(TestCase):
     """
     Tests for L{_AMPUsernamePasswordTests}, a credentials type which works with
     username/challenge/nonce/responses of the form used by L{PasswordLogin}.
     """
+
     def setUp(self):
         self.username = 'user name'
         password = 'foo bar\N{LATIN SMALL LETTER E WITH ACUTE}'
@@ -341,14 +341,12 @@ class AMPUsernamePasswordTests(TestCase):
         """
         self.assertTrue(self.credentials.checkPassword(self.password))
 
-
     def test_checkInvalidPasswordString(self):
         """
         L{_AMPUsernamePassword} accepts a C{str} for the known correct
         password and returns C{False} if the response does not match it.
         """
         self.assertFalse(self.credentials.checkPassword('quux'))
-
 
     def test_checkPasswordUnicode(self):
         """
@@ -358,7 +356,6 @@ class AMPUsernamePasswordTests(TestCase):
         """
         self.assertTrue(
             self.credentials.checkPassword(self.password.decode('utf-8')))
-
 
     def test_checkInvalidPasswordUnicode(self):
         """
@@ -371,11 +368,11 @@ class AMPUsernamePasswordTests(TestCase):
                 '\N{LATIN SMALL LETTER E WITH ACUTE}'))
 
 
-
 class CredAMPServerFactoryTests(TestCase):
     """
     Tests for L{CredAMPServerFactory}.
     """
+
     def test_buildProtocol(self):
         """
         L{CredAMPServerFactory.buildProtocol} returns a L{CredReceiver}
@@ -389,11 +386,11 @@ class CredAMPServerFactoryTests(TestCase):
         self.assertIdentical(proto.portal, portal)
 
 
-
 class OneTimePadCheckerTests(TestCase):
     """
     Tests for L{OneTimePadChecker}.
     """
+
     def test_requestAvatarId(self):
         """
         L{OneTimePadChecker.requestAvatarId} should return the username in the
@@ -405,7 +402,6 @@ class OneTimePadCheckerTests(TestCase):
         self.assertEqual(
             checker.requestAvatarId(_AMPOneTimePad(PAD)), USERNAME)
 
-
     def test_requestAvatarIdUnauthorized(self):
         """
         L{OneTimePadChecker.requestAvatarId} should throw L{UnauthorizedLogin}
@@ -415,7 +411,6 @@ class OneTimePadCheckerTests(TestCase):
         self.assertRaises(
             UnauthorizedLogin,
             lambda: checker.requestAvatarId(_AMPOneTimePad(None)))
-
 
     def test_oneTimePad(self):
         """

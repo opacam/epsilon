@@ -1,23 +1,22 @@
-
 """
 Tests for L{epsilon.structlike}.
 """
 
 import threading
 
-from epsilon.structlike import record
 from twisted.internet import reactor
 from twisted.internet.defer import gatherResults
 from twisted.internet.threads import deferToThreadPool
 from twisted.python.threadpool import ThreadPool
 from twisted.trial import unittest
 
+from epsilon.structlike import record
+
 
 class MyRecord(record('something somethingElse')):
     """
     A sample record subclass.
     """
-
 
 
 class StructLike(unittest.TestCase):
@@ -53,6 +52,7 @@ class StructLike(unittest.TestCase):
     def testWithPositionalSubclass(self):
         class RecordSubclass(record('x y z', x=1, y=2, z=3)):
             pass
+
         self._testme(RecordSubclass)
 
     def testWithoutPositional(self):
@@ -61,6 +61,7 @@ class StructLike(unittest.TestCase):
     def testWithoutPositionalSubclass(self):
         class RecordSubclass(record(x=1, y=2, z=3)):
             pass
+
         self._testme(RecordSubclass)
 
     def testBreakRecord(self):
@@ -88,7 +89,6 @@ class StructLike(unittest.TestCase):
         self.assertRaises(TypeError, R, x=5, y=6)
         self.assertRaises(TypeError, R, 5, 6)
 
-
     def test_typeStringRepresentation(self):
         """
         'Record' types should have a name which provides information about the
@@ -97,7 +97,6 @@ class StructLike(unittest.TestCase):
         R = record('xyz abc def')
         self.assertEqual(R.__name__, "Record<xyz abc def>")
 
-
     def test_instanceStringRepresentation(self):
         """
         'Record' instances should provide a string representation which
@@ -105,7 +104,6 @@ class StructLike(unittest.TestCase):
         """
         obj = MyRecord(something=1, somethingElse=2)
         self.assertEqual(repr(obj), 'MyRecord(something=1, somethingElse=2)')
-
 
     def test_instanceStringRepresentationNesting(self):
         """
@@ -117,7 +115,6 @@ class StructLike(unittest.TestCase):
             repr(MyRecord(obj, obj)),
             'MyRecord(something=%s, somethingElse=%s)' % (objRepr, objRepr))
 
-
     def test_instanceStringRepresentationRecursion(self):
         """
         'Record' instances should provide a repr that displays 'ClassName(...)'
@@ -128,7 +125,6 @@ class StructLike(unittest.TestCase):
         self.assertEqual(
             repr(obj), 'MyRecord(something=1, somethingElse=MyRecord(...))')
 
-
     def test_instanceStringRepresentationUnhashableRecursion(self):
         """
         'Record' instances should display 'ClassName(...)' even for unhashable
@@ -138,7 +134,6 @@ class StructLike(unittest.TestCase):
         obj.somethingElse.append(obj)
         self.assertEqual(
             repr(obj), 'MyRecord(something=1, somethingElse=[MyRecord(...)])')
-
 
     def test_threadLocality(self):
         """
@@ -157,17 +152,21 @@ class StructLike(unittest.TestCase):
             condition.
             """
             waited = False
+
             def __init__(self):
                 self.set = threading.Event()
                 self.wait = threading.Event()
+
             def __repr__(self):
                 if not self.waited:
                     self.set.set()
                     self.wait.wait()
                 return 'sticky'
+
         r = StickyRepr()
         mr = MyRecord(something=1, somethingElse=r)
         d = deferToThreadPool(reactor, pool, repr, mr)
+
         def otherRepr():
             # First we wait for the first thread doing a repr() to enter its
             # __repr__()...
@@ -180,6 +179,7 @@ class StructLike(unittest.TestCase):
             # Now we're done, wake up the other repr and let it complete.
             r.wait.set()
             return result
+
         d2 = deferToThreadPool(reactor, pool, otherRepr)
 
         def done(xxx_todo_changeme):
@@ -188,4 +188,5 @@ class StructLike(unittest.TestCase):
             # self.assertEquals(thread1repr, thread2repr)
             self.assertEqual(thread1repr, knownGood)
             self.assertEqual(thread2repr, knownGood)
+
         return gatherResults([d, d2]).addCallback(done)

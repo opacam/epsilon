@@ -5,17 +5,22 @@ Functions for running a Python file in a child process and recording resource
 usage information and other statistics about it.
 """
 
-import os, time, sys, socket, io, pprint, errno
+import errno
+import io
+import os
+import pprint
+import socket
+import sys
+import time
 
 import twisted
-from twisted.python import log, filepath, failure, util
 from twisted.internet import reactor, protocol, error, defer
 from twisted.protocols import policies
+from twisted.python import log, filepath, failure, util
 
 import epsilon
-from epsilon import structlike
-
 from epsilon import juice
+from epsilon import structlike
 from epsilon.test import utils
 
 
@@ -29,14 +34,12 @@ class diskstat(structlike.record(
     """
 
 
-
 class partitionstat(structlike.record(
     'readCount readSectorCount writeCount writeSectorCount')):
     """
     Like diskstat, but for a partition.  Less information is made available by
     Linux for partitions, so this has fewer attributes.
     """
-
 
 
 def parseDiskStatLine(L):
@@ -54,7 +57,6 @@ def parseDiskStatLine(L):
     return device, factory(*list(map(int, parts[3:])))
 
 
-
 def parseDiskStats(fObj):
     """
     Parse a file-like object containing lines formatted like those in
@@ -64,14 +66,12 @@ def parseDiskStats(fObj):
         yield parseDiskStatLine(L)
 
 
-
 def captureStats():
     """
     Parse the current contents of C{/proc/diskstats} into a dict mapping device
     names to instances of the appropriate stat record.
     """
-    return dict(parseDiskStats(file('/proc/diskstats')))
-
+    return dict(parseDiskStats(open('/proc/diskstats')))
 
 
 class ResourceSnapshot(structlike.record('time disk partition size')):
@@ -92,18 +92,17 @@ class ResourceSnapshot(structlike.record('time disk partition size')):
     """
 
 
-
 class ProcessDied(Exception):
     """
     Encapsulates process state and failure mode.
     """
+
     def __init__(self, exitCode, signal, status, output):
         self.exitCode = exitCode
         self.signal = signal
         self.status = status
         self.output = output
         Exception.__init__(self)
-
 
 
 class BasicProcess(protocol.ProcessProtocol, policies.TimeoutMixin):
@@ -121,25 +120,20 @@ class BasicProcess(protocol.ProcessProtocol, policies.TimeoutMixin):
         self.path = path
         self.output = []
 
-
     def connectionMade(self):
         self.setTimeout(900.0)
-
 
     def timeoutConnection(self):
         self.timedOut = True
         self.transport.signalProcess('KILL')
 
-
     def childDataReceived(self, childFD, data):
         self.resetTimeout()
         self.output.append((childFD, data))
 
-
     def childConnectionLost(self, childFD):
         self.resetTimeout()
         self.output.append((childFD, None))
-
 
     def processEnded(self, reason):
         # XXX Okay, I'm a liar.  This doesn't do everything.  Strictly speaking
@@ -162,19 +156,19 @@ class BasicProcess(protocol.ProcessProtocol, policies.TimeoutMixin):
             d.errback(reason.value)
         self.setTimeout(None)
 
-
     def spawn(cls, executable, args, path, env, spawnProcess=None):
         """
-        Run an executable with some arguments in the given working directory with
-        the given environment variables.
+        Run an executable with some arguments in the given working directory
+        with the given environment variables.
 
-        Returns a Deferred which fires with a two-tuple of (exit status, output
-        list) if the process terminates without timing out or being killed by a
-        signal.  Otherwise, the Deferred errbacks with either L{error.TimeoutError}
-        if any 10 minute period passes with no events or L{ProcessDied} if it is
-        killed by a signal.
+        Returns a Deferred which fires with a two-tuple of (exit status,
+        output list) if the process terminates without timing out or being
+        killed by a signal. Otherwise, the Deferred errbacks with either
+        L{error.TimeoutError} if any 10 minute period passes with no events or
+        L{ProcessDied} if it is killed by a signal.
 
-        On success, the output list is of two-tuples of (file descriptor, bytes).
+        On success, the output list is of two-tuples of
+        (file descriptor, bytes).
         """
         d = defer.Deferred()
         proto = cls(d, filepath.FilePath(path))
@@ -190,14 +184,15 @@ class BasicProcess(protocol.ProcessProtocol, policies.TimeoutMixin):
                       cls.BACKCHANNEL_OUT: 'r',
                       cls.BACKCHANNEL_IN: 'w'})
         return d
-    spawn = classmethod(spawn)
 
+    spawn = classmethod(spawn)
 
 
 class Change(object):
     """
     Stores two ResourceSnapshots taken at two different times.
     """
+
     def start(self, path, disk, partition):
         # Do these three things as explicit, separate statments to make sure
         # gathering disk stats isn't accidentally included in the duration.
@@ -209,7 +204,6 @@ class Change(object):
             disk=beforeDiskStats.get(disk, None),
             partition=beforeDiskStats.get(partition, None),
             size=startSize)
-
 
     def stop(self, path, disk, partition):
         # Do these three things as explicit, separate statments to make sure
@@ -224,12 +218,9 @@ class Change(object):
             size=endSize)
 
 
-
 class BenchmarkProcess(BasicProcess):
-
     START = '\0'
     STOP = '\1'
-
 
     def __init__(self, *a, **kw):
         BasicProcess.__init__(self, *a, **kw)
@@ -245,20 +236,16 @@ class BenchmarkProcess(BasicProcess):
         # Just keep track of stats between START and STOP events.
         self.benchmarkChange = Change()
 
-
     def connectionMade(self):
         return BasicProcess.connectionMade(self)
-
 
     def startTiming(self):
         self.benchmarkChange.start(self.path, self.disk, self.partition)
         self.transport.writeToChild(self.BACKCHANNEL_IN, self.START)
 
-
     def stopTiming(self):
         self.benchmarkChange.stop(self.path, self.disk, self.partition)
         self.transport.writeToChild(self.BACKCHANNEL_IN, self.STOP)
-
 
     def childDataReceived(self, childFD, data):
         if childFD == self.BACKCHANNEL_OUT:
@@ -273,14 +260,14 @@ class BenchmarkProcess(BasicProcess):
         else:
             return BasicProcess.childDataReceived(self, childFD, data)
 
-
     def processEnded(self, reason):
         self.overallChange.stop(self.path, self.disk, self.partition)
         return BasicProcess.processEnded(self, reason)
 
 
-
 STATS_VERSION = 0
+
+
 class Results(juice.Command):
     commandName = 'Result'
     arguments = [
@@ -347,11 +334,12 @@ class Results(juice.Command):
         # Number of milliseconds spent blocked on writing to the disk over the
         # lifetime of the child process.  Same caveat as above.
         ('write_ms', juice.Integer(optional=True)),
-        ]
+    ]
 
 
 hostname = socket.gethostname()
 assert hostname != 'localhost', "Fix your computro."
+
 
 def formatResults(name, sectorSize, before, after, error, timeout):
     output = io.StringIO()
@@ -361,9 +349,11 @@ def formatResults(name, sectorSize, before, after, error, timeout):
 
     if after.partition is not None:
         read_count = after.partition.readCount - before.partition.readCount
-        read_sectors = after.partition.readSectorCount - before.partition.readSectorCount
+        read_sectors = after.partition.readSectorCount -\
+                       before.partition.readSectorCount
         write_count = after.partition.writeCount - before.partition.writeCount
-        write_sectors = after.partition.writeSectorCount - before.partition.writeSectorCount
+        write_sectors = after.partition.writeSectorCount -\
+                        before.partition.writeSectorCount
     else:
         read_count = None
         read_sectors = None
@@ -398,18 +388,16 @@ def formatResults(name, sectorSize, before, after, error, timeout):
         python_version=str(sys.hexversion),
         twisted_version=twisted_version,
         divmod_version=epsilon_version,
-        ).do(jj, requiresAnswer=False)
+    ).do(jj, requiresAnswer=False)
     return output.getvalue()
-
 
 
 def reportResults(results):
     print(results)
     print()
-    fObj = file('output', 'ab')
+    fObj = open('output', 'ab')
     fObj.write(results)
     fObj.close()
-
 
 
 def discoverCurrentWorkingDevice(procMounts='/proc/self/mounts'):
@@ -419,7 +407,7 @@ def discoverCurrentWorkingDevice(procMounts='/proc/self/mounts'):
     """
     possibilities = []
     cwd = os.getcwd()
-    with file(procMounts, 'rb') as f:
+    with open(procMounts, 'rb') as f:
         for L in f:
             parts = L.split()
             if cwd.startswith(parts[1]):
@@ -429,7 +417,6 @@ def discoverCurrentWorkingDevice(procMounts='/proc/self/mounts'):
         return possibilities[-1][-1]
     except IndexError:
         return '<unknown>'
-
 
 
 def getSize(p):
@@ -458,13 +445,13 @@ def getOneSize(ch):
             raise
 
 
-
 def getSectorSize(p):
     return os.statvfs(p.path).f_bsize
 
 
 def _bench(name, workingPath, function):
     d = function()
+
     def later(result):
         err = timeout = False
         if isinstance(result, failure.Failure):
@@ -499,7 +486,6 @@ def _bench(name, workingPath, function):
     return d.addBoth(later)
 
 
-
 def bench(name, path, func):
     log.startLogging(sys.stdout)
     log.msg("Running " + name)
@@ -517,14 +503,15 @@ def makeBenchmarkRunner(path, args):
     which calls the setup function from the given file, then one which calls
     the execute function from the given file.
     """
+
     def runner():
         return BenchmarkProcess.spawn(
             executable=sys.executable,
             args=['-Wignore'] + args,
             path=path.path,
             env=os.environ)
-    return runner
 
+    return runner
 
 
 def start():
@@ -540,7 +527,6 @@ def start():
     if response != BenchmarkProcess.START:
         raise RuntimeError(
             "Parent process responded with %r instead of START " % (response,))
-
 
 
 def stop():
@@ -559,7 +545,6 @@ def stop():
             "Parent process responded with %r instead of STOP" % (response,))
 
 
-
 def main():
     """
     Run me with the filename of a benchmark script as an argument.  I will time
@@ -574,7 +559,6 @@ def main():
         bench(name, path, func)
     finally:
         path.remove()
-
 
 
 if __name__ == '__main__':

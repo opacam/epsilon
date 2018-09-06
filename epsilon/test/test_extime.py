@@ -1,11 +1,11 @@
-
 import datetime
-import time
 import operator
+import time
 
 from twisted.trial import unittest
 
 from epsilon import extime
+
 
 # This is the implementation of 'mkgmtime' used to derive the values below.  It
 # is perhaps instructive to read, but it remains commented out to avoid the
@@ -26,21 +26,26 @@ class TestTime(unittest.TestCase):
     class MST(datetime.tzinfo):
         def tzname(self, dt):
             return 'MST'
+
         def utcoffset(self, dt):
-            return datetime.timedelta(hours = -7)
+            return datetime.timedelta(hours=-7)
+
         def dst(self, dt):
             return datetime.timedelta(0)
 
     class CET(datetime.tzinfo):
         def tzname(self, dt):
             return 'MST'
+
         def utcoffset(self, dt):
-            return datetime.timedelta(hours = 1)
+            return datetime.timedelta(hours=1)
+
         def dst(self, dt):
             return datetime.timedelta(0)
 
     reference = datetime.datetime(2004, 12, 6, 14, 15, 16)
-    awareReference = datetime.datetime(2004, 12, 6, 14, 15, 16, tzinfo=extime.FixedOffset(0, 0))
+    awareReference = datetime.datetime(2004, 12, 6, 14, 15, 16,
+                                       tzinfo=extime.FixedOffset(0, 0))
 
     def _checkReference(self, timeInstance, reference=None):
         """
@@ -68,10 +73,10 @@ class TestTime(unittest.TestCase):
         self.assertEqual(dtime.hour, 23)
         self.assertEqual(dtime.minute, 12)
 
-
     def test_cmp(self):
         now = time.gmtime()
-        self.assertEqual(extime.Time.fromStructTime(now), extime.Time.fromStructTime(now))
+        self.assertEqual(extime.Time.fromStructTime(now),
+                         extime.Time.fromStructTime(now))
         self.assertNotEqual(
             extime.Time.fromStructTime(now),
             extime.Time.fromStructTime(now) + datetime.timedelta(seconds=42))
@@ -81,22 +86,24 @@ class TestTime(unittest.TestCase):
         for op in 'lt', 'le', 'gt', 'ge':
             self.assertRaises(TypeError, getattr(operator, op), aTime, now)
 
-
     def test_fromNow(self):
         diff = datetime.datetime.utcnow() - extime.Time()._time
         if diff < datetime.timedelta():
             diff = -diff
-        self.assertTrue(diff.days == 0 and diff.seconds <= 5, 'Time created now is %r away from now' % (diff,))
+        self.assertTrue(diff.days == 0 and diff.seconds <= 5,
+                        'Time created now is %r away from now' % (diff,))
 
     def test_insignificantTimezones(self):
         """
         Timezones should be insignificant when the resolution is >= 1 day
         """
+
         def testEqual(creator, input):
             self.assertEqual(creator(input), creator(input, tzinfo=self.MST()))
 
         def testNotEqual(creator, input):
-            self.assertNotEqual(creator(input), creator(input, tzinfo=self.MST()))
+            self.assertNotEqual(creator(input),
+                                creator(input, tzinfo=self.MST()))
 
         testEqual(extime.Time.fromHumanly, 'sunday')
         testEqual(extime.Time.fromISO8601TimeAndDate, '2005')
@@ -133,57 +140,75 @@ class TestTime(unittest.TestCase):
 
         def testMicrosecond(input, expected, tzinfo=None):
             time = test(input, expected, tzinfo)
-            self.assertEqual(time.resolution, datetime.timedelta(microseconds=1))
+            self.assertEqual(time.resolution,
+                             datetime.timedelta(microseconds=1))
 
         # 'now' is Monday, 2004-12-06 14:15:16 UTC
-        testDay('yesterday',       '2004-12-05')
-        testDay(' ToDaY ',         '2004-12-06')
-        testDay('   TuESDaY ',     '2004-12-07')
-        testDay(' ToMoRroW ',      '2004-12-07')
-        testDay('wednesday',       '2004-12-08')
-        testDay('This wednesday',  '2004-12-08')
-        testDay('neXt wednesday',  '2004-12-08')
-        testDay('thursday',        '2004-12-09')
-        testDay('friday',          '2004-12-10')
-        testDay('saturday',        '2004-12-11')
-        testDay('sunday',          '2004-12-12')
-        testDay('sunday',          '2004-12-12', self.MST())     # timezone is insignificant for dates with resolution >= 1 day
-        testDay('monday',          '2004-12-13')
+        testDay('yesterday', '2004-12-05')
+        testDay(' ToDaY ', '2004-12-06')
+        testDay('   TuESDaY ', '2004-12-07')
+        testDay(' ToMoRroW ', '2004-12-07')
+        testDay('wednesday', '2004-12-08')
+        testDay('This wednesday', '2004-12-08')
+        testDay('neXt wednesday', '2004-12-08')
+        testDay('thursday', '2004-12-09')
+        testDay('friday', '2004-12-10')
+        testDay('saturday', '2004-12-11')
+        testDay('sunday', '2004-12-12')
+        testDay('sunday', '2004-12-12',
+                self.MST())  # timezone is insignificant for dates with resolution >= 1 day
+        testDay('monday', '2004-12-13')
 
-        testMinute('15:00',        '2004-12-06T15:00+00:00')
-        testMinute('8:00',         '2004-12-06T15:00+00:00', self.MST())
-        testMinute(' 14:00  ',     '2004-12-07T14:00+00:00')
-        testMinute(' 2:00  pm ',   '2004-12-07T14:00+00:00')
-        testMinute(' 02:00  pm ',  '2004-12-07T14:00+00:00')
-        testMinute(' noon ',       '2004-12-07T12:00+00:00')
-        testMinute('midnight',     '2004-12-07T00:00+00:00')
+        testMinute('15:00', '2004-12-06T15:00+00:00')
+        testMinute('8:00', '2004-12-06T15:00+00:00', self.MST())
+        testMinute(' 14:00  ', '2004-12-07T14:00+00:00')
+        testMinute(' 2:00  pm ', '2004-12-07T14:00+00:00')
+        testMinute(' 02:00  pm ', '2004-12-07T14:00+00:00')
+        testMinute(' noon ', '2004-12-07T12:00+00:00')
+        testMinute('midnight', '2004-12-07T00:00+00:00')
 
-        testMicrosecond('now',     '2004-12-06T14:15:16+00:00')
+        testMicrosecond('now', '2004-12-06T14:15:16+00:00')
         testMicrosecond('  noW  ', '2004-12-06T14:15:16+00:00')
 
         testMalformed('24:01')
-        testMalformed('24:00')  # this one might be considered valid by some people, but it's just dumb.
+        testMalformed(
+            '24:00')  # this one might be considered valid by some people, but it's just dumb.
         testMalformed('13:00pm')
         testMalformed('13:00am')
 
-        # these are perfectly reasonable cases, but are totally broken. Good enough for demo work.
+        # these are perfectly reasonable cases,
+        # but are totally broken. Good enough for demo work.
         testMalformed('13:00 tomorrow')
         testMalformed('13:00 next thursday')
         testMalformed('last monday')
 
     def test_fromISO8601DateAndTime(self):
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16') )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('20041206T141516') )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('20041206T091516-0500') )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('2004-12-06T07:15:16', self.MST()) )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16Z', self.MST()) )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16-0000', self.MST()) )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16-0000') )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('2004-W50-1T14:15:16') )
-        self._checkReference( extime.Time.fromISO8601TimeAndDate('2004-341T14:15:16') )
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16'))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('20041206T141516'))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('20041206T091516-0500'))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('2004-12-06T07:15:16',
+                                               self.MST()))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16Z',
+                                               self.MST()))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16-0000',
+                                               self.MST()))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('2004-12-06T14:15:16-0000'))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('2004-W50-1T14:15:16'))
+        self._checkReference(
+            extime.Time.fromISO8601TimeAndDate('2004-341T14:15:16'))
 
-        self.assertRaises( ValueError, extime.Time.fromISO8601TimeAndDate, '2005-W53' )
-        self.assertRaises( ValueError, extime.Time.fromISO8601TimeAndDate, '2004-367' )
+        self.assertRaises(ValueError, extime.Time.fromISO8601TimeAndDate,
+                          '2005-W53')
+        self.assertRaises(ValueError, extime.Time.fromISO8601TimeAndDate,
+                          '2004-367')
         try:
             extime.Time.fromISO8601TimeAndDate('2004-366')
         except ValueError:
@@ -194,29 +219,63 @@ class TestTime(unittest.TestCase):
             extime.Time.fromISO8601TimeAndDate('2004-123T14:13-0600')
             extime.Time.fromISO8601TimeAndDate('2004-123T14:13:51-0600')
         except ValueError:
-            raise unittest.FailTest('timezone should be allowed if time with *any* resolution is specified')
+            raise unittest.FailTest(
+                'timezone should be allowed if '
+                'time with *any* resolution is specified')
 
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2005').resolution, datetime.timedelta(days=365) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004').resolution, datetime.timedelta(days=366) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02').resolution, datetime.timedelta(days=29) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02-29').resolution, datetime.timedelta(days=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02-29T13').resolution, datetime.timedelta(hours=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02-29T13:10').resolution, datetime.timedelta(minutes=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02-29T13:10:05').resolution, datetime.timedelta(seconds=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02-29T13:10:05.010').resolution, datetime.timedelta(microseconds=1000) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02-29T13:10:05.010000').resolution, datetime.timedelta(microseconds=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-02-29T13:10:05.010000123').resolution, datetime.timedelta(microseconds=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-W11').resolution, datetime.timedelta(days=7) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-W11-3').resolution, datetime.timedelta(days=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-W11-3T14:16:21').resolution, datetime.timedelta(seconds=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-123').resolution, datetime.timedelta(days=1) )
-        self.assertEqual( extime.Time.fromISO8601TimeAndDate('2004-123T14:16:21').resolution, datetime.timedelta(seconds=1) )
+        self.assertEqual(extime.Time.fromISO8601TimeAndDate('2005').resolution,
+                         datetime.timedelta(days=365))
+        self.assertEqual(extime.Time.fromISO8601TimeAndDate('2004').resolution,
+                         datetime.timedelta(days=366))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-02').resolution,
+            datetime.timedelta(days=29))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-02-29').resolution,
+            datetime.timedelta(days=1))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-02-29T13').resolution,
+            datetime.timedelta(hours=1))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-02-29T13:10').resolution,
+            datetime.timedelta(minutes=1))
+        self.assertEqual(extime.Time.fromISO8601TimeAndDate(
+            '2004-02-29T13:10:05').resolution, datetime.timedelta(seconds=1))
+        self.assertEqual(extime.Time.fromISO8601TimeAndDate(
+            '2004-02-29T13:10:05.010').resolution,
+                         datetime.timedelta(microseconds=1000))
+        self.assertEqual(extime.Time.fromISO8601TimeAndDate(
+            '2004-02-29T13:10:05.010000').resolution,
+                         datetime.timedelta(microseconds=1))
+        self.assertEqual(extime.Time.fromISO8601TimeAndDate(
+            '2004-02-29T13:10:05.010000123').resolution,
+                         datetime.timedelta(microseconds=1))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-W11').resolution,
+            datetime.timedelta(days=7))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-W11-3').resolution,
+            datetime.timedelta(days=1))
+        self.assertEqual(extime.Time.fromISO8601TimeAndDate(
+            '2004-W11-3T14:16:21').resolution, datetime.timedelta(seconds=1))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-123').resolution,
+            datetime.timedelta(days=1))
+        self.assertEqual(
+            extime.Time.fromISO8601TimeAndDate('2004-123T14:16:21').resolution,
+            datetime.timedelta(seconds=1))
 
     def test_fromStructTime(self):
-        self._checkReference( extime.Time.fromStructTime((2004, 12, 6, 14, 15, 16, 0, 0, 0)) )
-        self._checkReference( extime.Time.fromStructTime((2004, 12, 6, 7, 15, 16, 0, 0, 0), self.MST()) )
-        self._checkReference( extime.Time.fromStructTime((2004, 12, 6, 15, 15, 16, 0, 0, 0), self.CET()) )
-        self._checkReference( extime.Time.fromStructTime(time.struct_time((2004, 12, 6, 7, 15, 16, 0, 0, 0)), self.MST()) )
+        self._checkReference(
+            extime.Time.fromStructTime((2004, 12, 6, 14, 15, 16, 0, 0, 0)))
+        self._checkReference(
+            extime.Time.fromStructTime((2004, 12, 6, 7, 15, 16, 0, 0, 0),
+                                       self.MST()))
+        self._checkReference(
+            extime.Time.fromStructTime((2004, 12, 6, 15, 15, 16, 0, 0, 0),
+                                       self.CET()))
+        self._checkReference(extime.Time.fromStructTime(
+            time.struct_time((2004, 12, 6, 7, 15, 16, 0, 0, 0)), self.MST()))
 
     def test_sanitizeStructTime(self):
         """
@@ -234,25 +293,38 @@ class TestTime(unittest.TestCase):
         self.assertEqual(extime.sanitizeStructTime(t3), cleanT3)
 
     def test_fromDatetime(self):
-        self._checkReference( extime.Time.fromDatetime(datetime.datetime(2004, 12, 6, 14, 15, 16)) )
-        self._checkReference( extime.Time.fromDatetime(datetime.datetime(2004, 12, 6, 7, 15, 16, tzinfo=self.MST())) )
-        self._checkReference( extime.Time.fromDatetime(datetime.datetime(2004, 12, 6, 15, 15, 16, tzinfo=self.CET())) )
+        self._checkReference(extime.Time.fromDatetime(
+            datetime.datetime(2004, 12, 6, 14, 15, 16)))
+        self._checkReference(extime.Time.fromDatetime(
+            datetime.datetime(2004, 12, 6, 7, 15, 16, tzinfo=self.MST())))
+        self._checkReference(extime.Time.fromDatetime(
+            datetime.datetime(2004, 12, 6, 15, 15, 16, tzinfo=self.CET())))
 
     def test_fromPOSIXTimestamp(self):
         # if there were an 'mkgmtime', it would do this:
         # mkgmtime((2004, 12, 6, 14, 15, 16, 0, 0, 0))) = 1102342516.0
-        self._checkReference( extime.Time.fromPOSIXTimestamp(1102342516.0))
+        self._checkReference(extime.Time.fromPOSIXTimestamp(1102342516.0))
 
     def test_fromRFC2822(self):
-        self._checkReference( extime.Time.fromRFC2822('Mon, 6 Dec 2004 14:15:16 -0000') )
-        self._checkReference( extime.Time.fromRFC2822('Mon, 6 Dec 2004 9:15:16 -0500') )
-        self._checkReference( extime.Time.fromRFC2822('6   Dec   2004   9:15:16   -0500') )
-        self._checkReference( extime.Time.fromRFC2822('Mon,6 Dec 2004 9:15:16 -0500') )
-        self._checkReference( extime.Time.fromRFC2822('Mon,6 Dec 2004 9:15 -0500'), datetime.datetime(2004, 12, 6, 14, 15) )
-        self._checkReference( extime.Time.fromRFC2822('Mon,6 Dec 2004 9:15:16 EST') )
-        self._checkReference( extime.Time.fromRFC2822('Monday,6 December 2004 9:15:16 EST') )
-        self._checkReference( extime.Time.fromRFC2822('Monday,6 December 2004 14:15:16') )
-        self.assertRaises( ValueError, extime.Time.fromRFC2822, 'some invalid date' )
+        self._checkReference(
+            extime.Time.fromRFC2822('Mon, 6 Dec 2004 14:15:16 -0000'))
+        self._checkReference(
+            extime.Time.fromRFC2822('Mon, 6 Dec 2004 9:15:16 -0500'))
+        self._checkReference(
+            extime.Time.fromRFC2822('6   Dec   2004   9:15:16   -0500'))
+        self._checkReference(
+            extime.Time.fromRFC2822('Mon,6 Dec 2004 9:15:16 -0500'))
+        self._checkReference(
+            extime.Time.fromRFC2822('Mon,6 Dec 2004 9:15 -0500'),
+            datetime.datetime(2004, 12, 6, 14, 15))
+        self._checkReference(
+            extime.Time.fromRFC2822('Mon,6 Dec 2004 9:15:16 EST'))
+        self._checkReference(
+            extime.Time.fromRFC2822('Monday,6 December 2004 9:15:16 EST'))
+        self._checkReference(
+            extime.Time.fromRFC2822('Monday,6 December 2004 14:15:16'))
+        self.assertRaises(ValueError, extime.Time.fromRFC2822,
+                          'some invalid date')
 
     def test_twentyThirtyEightBug_RFC2822(self):
         """
@@ -264,14 +336,14 @@ class TestTime(unittest.TestCase):
         """
         self.assertEqual(
             extime.Time.fromRFC2822(
-                    'Fri, 19 Jan 2038 03:14:08 -0000'
-                    ).asPOSIXTimestamp(),
-            (2**31))
+                'Fri, 19 Jan 2038 03:14:08 -0000'
+            ).asPOSIXTimestamp(),
+            (2 ** 31))
         self.assertEqual(
             extime.Time.fromRFC2822(
                 'Fri, 13 Dec 1901 20:45:52 -0000'
-                ).asPOSIXTimestamp(),
-            -(2**31))
+            ).asPOSIXTimestamp(),
+            -(2 ** 31))
 
     def test_twentyThirtyEightBug_POSIXTimestamp(self):
         """
@@ -283,26 +355,26 @@ class TestTime(unittest.TestCase):
         """
         self.assertEqual(
             extime.Time.fromPOSIXTimestamp(
-                2**31
-                ).asPOSIXTimestamp(),
-            (2**31))
+                2 ** 31
+            ).asPOSIXTimestamp(),
+            (2 ** 31))
         self.assertEqual(
             extime.Time.fromPOSIXTimestamp(
-                -(2**31)-1
-                ).asPOSIXTimestamp(),
-            -(2**31)-1)
-
+                -(2 ** 31) - 1
+            ).asPOSIXTimestamp(),
+            -(2 ** 31) - 1)
 
     def test_obsoleteRFC2822(self):
-        self._checkReference( extime.Time.fromRFC2822('Monday,6 December (i hate this month) 2004 9:15:16 R') )
+        self._checkReference(extime.Time.fromRFC2822(
+            'Monday,6 December (i hate this month) 2004 9:15:16 R'))
 
     test_obsoleteRFC2822.todo = '''\
     email.Utils implementation does not handle obsoleted military style
     timezones, nor does it handle obsoleted comments in the header'''
 
     def test_asPOSIXTimestamp(self):
-        self.assertEqual( self._createReference().asPOSIXTimestamp(), 1102342516 )
-
+        self.assertEqual(self._createReference().asPOSIXTimestamp(),
+                         1102342516)
 
     def test_asRFC1123(self):
         self.assertEqual(
@@ -310,55 +382,78 @@ class TestTime(unittest.TestCase):
             'Mon, 06 Dec 2004 14:15:16 GMT'
         )
 
-
     def test_asRFC2822(self):
-        self.assertEqual( self._createReference().asRFC2822(), 'Mon, 6 Dec 2004 14:15:16 -0000' )
-        self.assertEqual( self._createReference().asRFC2822(self.MST()), 'Mon, 6 Dec 2004 07:15:16 -0700' )
-        self.assertEqual( self._createReference().asRFC2822(self.CET()), 'Mon, 6 Dec 2004 15:15:16 +0100' )
+        self.assertEqual(self._createReference().asRFC2822(),
+                         'Mon, 6 Dec 2004 14:15:16 -0000')
+        self.assertEqual(self._createReference().asRFC2822(self.MST()),
+                         'Mon, 6 Dec 2004 07:15:16 -0700')
+        self.assertEqual(self._createReference().asRFC2822(self.CET()),
+                         'Mon, 6 Dec 2004 15:15:16 +0100')
 
     def test_asISO8601TimeAndDate(self):
         self.assertEqual(
             self._createReference().asISO8601TimeAndDate(),
-            '2004-12-06T14:15:16+00:00' )
+            '2004-12-06T14:15:16+00:00')
         self.assertEqual(
-            self._createReference(reference=datetime.datetime(2004, 12, 6, 14, 15, 16, 43210)).asISO8601TimeAndDate(),
-            '2004-12-06T14:15:16.04321+00:00' )
+            self._createReference(
+                reference=datetime.datetime(2004, 12, 6, 14, 15, 16,
+                                            43210)).asISO8601TimeAndDate(),
+            '2004-12-06T14:15:16.04321+00:00')
         self.assertEqual(
             self._createReference().asISO8601TimeAndDate(tzinfo=self.MST()),
-            '2004-12-06T07:15:16-07:00' )
+            '2004-12-06T07:15:16-07:00')
         self.assertEqual(
             self._createReference().asISO8601TimeAndDate(tzinfo=self.CET()),
-            '2004-12-06T15:15:16+01:00' )
+            '2004-12-06T15:15:16+01:00')
         self.assertEqual(
-            self._createReference().asISO8601TimeAndDate(includeTimezone=False),
-            '2004-12-06T14:15:16' )
+            self._createReference().asISO8601TimeAndDate(
+                includeTimezone=False),
+            '2004-12-06T14:15:16')
         self.assertEqual(
-            self._createReference(reference=datetime.datetime(2004, 12, 6, 14, 15, 16, 43210)).asISO8601TimeAndDate(includeTimezone=False),
-            '2004-12-06T14:15:16.04321' )
+            self._createReference(
+                reference=datetime.datetime(2004, 12, 6, 14, 15, 16,
+                                            43210)).asISO8601TimeAndDate(
+                includeTimezone=False),
+            '2004-12-06T14:15:16.04321')
         self.assertEqual(
-            self._createReference().asISO8601TimeAndDate(tzinfo=self.MST(), includeTimezone=False),
-            '2004-12-06T07:15:16' )
+            self._createReference().asISO8601TimeAndDate(
+                tzinfo=self.MST(), includeTimezone=False),
+            '2004-12-06T07:15:16')
         self.assertEqual(
-            self._createReference().asISO8601TimeAndDate(tzinfo=self.CET(), includeTimezone=False),
-            '2004-12-06T15:15:16' )
+            self._createReference().asISO8601TimeAndDate(
+                tzinfo=self.CET(), includeTimezone=False),
+            '2004-12-06T15:15:16')
 
     def test_asStructTime(self):
-        self.assertEqual( self._createReference().asStructTime(), (2004, 12, 0o6, 14, 15, 16, 0, 341, 0) )
-        self.assertEqual( self._createReference().asStructTime(tzinfo=self.MST()), (2004, 12, 0o6, 7, 15, 16, 0, 341, 0) )
-        self.assertEqual( self._createReference().asStructTime(tzinfo=self.CET()), (2004, 12, 0o6, 15, 15, 16, 0, 341, 0) )
+        self.assertEqual(self._createReference().asStructTime(),
+                         (2004, 12, 0o6, 14, 15, 16, 0, 341, 0))
+        self.assertEqual(
+            self._createReference().asStructTime(tzinfo=self.MST()),
+            (2004, 12, 0o6, 7, 15, 16, 0, 341, 0))
+        self.assertEqual(
+            self._createReference().asStructTime(tzinfo=self.CET()),
+            (2004, 12, 0o6, 15, 15, 16, 0, 341, 0))
 
     def test_asNaiveDatetime(self):
         def ref(tzinfo):
             return self.awareReference.astimezone(tzinfo).replace(tzinfo=None)
 
-        self.assertEqual( self._createReference().asNaiveDatetime(), self.reference )
-        self.assertEqual( self._createReference().asNaiveDatetime(tzinfo=self.MST()), ref(self.MST()))
-        self.assertEqual( self._createReference().asNaiveDatetime(tzinfo=self.CET()), ref(self.CET()))
+        self.assertEqual(self._createReference().asNaiveDatetime(),
+                         self.reference)
+        self.assertEqual(
+            self._createReference().asNaiveDatetime(tzinfo=self.MST()),
+            ref(self.MST()))
+        self.assertEqual(
+            self._createReference().asNaiveDatetime(tzinfo=self.CET()),
+            ref(self.CET()))
 
     def test_asDatetime(self):
-        self.assertEqual( self._createReference().asDatetime(), self.awareReference )
-        self.assertEqual( self._createReference().asDatetime(tzinfo=self.MST()), self.awareReference )
-        self.assertEqual( self._createReference().asDatetime(tzinfo=self.CET()), self.awareReference )
+        self.assertEqual(self._createReference().asDatetime(),
+                         self.awareReference)
+        self.assertEqual(self._createReference().asDatetime(tzinfo=self.MST()),
+                         self.awareReference)
+        self.assertEqual(self._createReference().asDatetime(tzinfo=self.CET()),
+                         self.awareReference)
 
     def test_asHumanlySameDay(self):
         """
@@ -366,62 +461,62 @@ class TestTime(unittest.TestCase):
         context to identify the time being formatted.  It should include only
         the time of day, when formatting times in the same day as now.
         """
-        sameDay = extime.Time.fromStructTime((2004, 12, 6, 14, 15, 16, 0, 0, 0))
+        sameDay = extime.Time.fromStructTime(
+            (2004, 12, 6, 14, 15, 16, 0, 0, 0))
         self.assertEqual(
             self._createReference().asHumanly(now=sameDay),
-            '02:15 pm' )
+            '02:15 pm')
         self.assertEqual(
             self._createReference().asHumanly(tzinfo=self.MST(), now=sameDay),
-            '07:15 am' )
+            '07:15 am')
         self.assertEqual(
             self._createReference().asHumanly(tzinfo=self.CET(), now=sameDay),
-            '03:15 pm' )
+            '03:15 pm')
 
         allDay = extime.Time.fromISO8601TimeAndDate('2005-123')
         self.assertEqual(allDay.asHumanly(now=allDay), 'all day')
-
 
     def test_asHumanlyDifferentDay(self):
         """
         L{Time.asHumanly} should include the month and day, when formatting
         times in a different day (but the same year) as now.
         """
-        nextDay = extime.Time.fromStructTime((2004, 12, 7, 14, 15, 16, 0, 0, 0))
+        nextDay = extime.Time.fromStructTime(
+            (2004, 12, 7, 14, 15, 16, 0, 0, 0))
         self.assertEqual(
             self._createReference().asHumanly(now=nextDay),
-            '6 Dec, 02:15 pm' )
+            '6 Dec, 02:15 pm')
         self.assertEqual(
             self._createReference().asHumanly(tzinfo=self.MST(), now=nextDay),
-            '6 Dec, 07:15 am' )
+            '6 Dec, 07:15 am')
         self.assertEqual(
             self._createReference().asHumanly(tzinfo=self.CET(), now=nextDay),
-            '6 Dec, 03:15 pm' )
+            '6 Dec, 03:15 pm')
 
         allDay = extime.Time.fromISO8601TimeAndDate('2005-123')
         allDayNextDay = extime.Time.fromISO8601TimeAndDate('2005-124')
         self.assertEqual(allDay.asHumanly(now=allDayNextDay), '3 May')
-
 
     def test_asHumanlyDifferentYear(self):
         """
         L{Time.asHumanly} should include the year, when formatting times in a
         different year than now.
         """
-        nextYear = extime.Time.fromStructTime((2005, 12, 6, 14, 15, 16, 0, 0, 0))
+        nextYear = extime.Time.fromStructTime(
+            (2005, 12, 6, 14, 15, 16, 0, 0, 0))
         self.assertEqual(
             self._createReference().asHumanly(now=nextYear),
-            '6 Dec 2004, 02:15 pm' )
+            '6 Dec 2004, 02:15 pm')
         self.assertEqual(
             self._createReference().asHumanly(tzinfo=self.MST(), now=nextYear),
-            '6 Dec 2004, 07:15 am' )
+            '6 Dec 2004, 07:15 am')
         self.assertEqual(
             self._createReference().asHumanly(tzinfo=self.CET(), now=nextYear),
-            '6 Dec 2004, 03:15 pm' )
+            '6 Dec 2004, 03:15 pm')
 
         allDay = extime.Time.fromISO8601TimeAndDate('2005-123')
         allDayNextYear = extime.Time.fromISO8601TimeAndDate('2006-123')
         self.assertEqual(allDay.asHumanly(now=allDayNextYear), '3 May 2005')
-
 
     def test_asHumanlyValidPrecision(self):
         """
@@ -430,17 +525,20 @@ class TestTime(unittest.TestCase):
         The precision behavior should be identical for both same day and
         different day code paths.
         """
-        sameDay = extime.Time.fromStructTime((2004, 12, 6, 14, 15, 16, 0, 0, 0))
-        nextDay = extime.Time.fromStructTime((2004, 12, 7, 14, 15, 16, 0, 0, 0))
+        sameDay = extime.Time.fromStructTime(
+            (2004, 12, 6, 14, 15, 16, 0, 0, 0))
+        nextDay = extime.Time.fromStructTime(
+            (2004, 12, 7, 14, 15, 16, 0, 0, 0))
         self.assertEqual(self._createReference().asHumanly(now=sameDay),
-                '02:15 pm' )
-        self.assertEqual(self._createReference().asHumanly(now=sameDay,
-                precision=extime.Time.Precision.SECONDS), '02:15:16 pm' )
+                         '02:15 pm')
+        self.assertEqual(self._createReference().asHumanly(
+            now=sameDay, precision=extime.Time.Precision.SECONDS),
+                         '02:15:16 pm')
         self.assertEqual(self._createReference().asHumanly(now=nextDay),
-                '6 Dec, 02:15 pm' )
-        self.assertEqual(self._createReference().asHumanly(now=nextDay,
-                precision=extime.Time.Precision.SECONDS), '6 Dec, 02:15:16 pm' )
-
+                         '6 Dec, 02:15 pm')
+        self.assertEqual(self._createReference().asHumanly(
+            now=nextDay, precision=extime.Time.Precision.SECONDS),
+                         '6 Dec, 02:15:16 pm')
 
     def test_asHumanlyInvalidPrecision(self):
         """
@@ -452,23 +550,25 @@ class TestTime(unittest.TestCase):
                           extime.Time().asHumanly,
                           **{'precision': '%H:%M'})
 
-
     def test_inverse(self):
         for style in [
-        'POSIXTimestamp',
-        'Datetime',
-        'RFC2822',
-        'StructTime',
-        'ISO8601TimeAndDate']:
-            parse = getattr(extime.Time, 'from'+style)
-            format = getattr(extime.Time, 'as'+style)
-            self.assertEqual( self._createReference(), parse(format(self._createReference())), '%s() is not the inverse of %s()' % (style, style))
+            'POSIXTimestamp',
+            'Datetime',
+            'RFC2822',
+            'StructTime',
+            'ISO8601TimeAndDate']:
+            parse = getattr(extime.Time, 'from' + style)
+            format = getattr(extime.Time, 'as' + style)
+            self.assertEqual(self._createReference(),
+                             parse(format(self._createReference())),
+                             '%s() is not the inverse of %s()' % (
+                                 style, style))
 
     def test_evalRepr(self):
         evalns = {'datetime': datetime,
                   'extime': extime}
         now = extime.Time()
-        self.assertEqual( now, eval(repr(now), evalns, evalns) )
+        self.assertEqual(now, eval(repr(now), evalns, evalns))
 
     def test_containment(self):
         makeTime = extime.Time.fromISO8601TimeAndDate
@@ -495,7 +595,6 @@ class TestTime(unittest.TestCase):
         self.assertRaises(TypeError, lambda: time1 + 1)
         self.assertRaises(TypeError, lambda: time1 - 1)
 
-
     def test_oneDay(self):
         day = self._createReference().oneDay()
         self.assertEqual(day._time, datetime.datetime(2004, 12, 6, 0, 0, 0))
@@ -503,5 +602,5 @@ class TestTime(unittest.TestCase):
 
     def test_isAllDay(self):
         self.assertFalse(self._createReference().isAllDay())
-        self.assertTrue(extime.Time.fromISO8601TimeAndDate('2005-123').isAllDay())
-
+        self.assertTrue(
+            extime.Time.fromISO8601TimeAndDate('2005-123').isAllDay())

@@ -3,17 +3,18 @@
 
 __metaclass__ = type
 
-import warnings, pprint
+import pprint
+import warnings
 
-from twisted.internet.main import CONNECTION_LOST
 from twisted.internet.defer import Deferred, maybeDeferred, fail
+from twisted.internet.main import CONNECTION_LOST
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet.ssl import Certificate
-from twisted.python.failure import Failure
 from twisted.python import log, filepath
+from twisted.python.failure import Failure
 
-from epsilon.liner import LineReceiver
 from epsilon import extime
+from epsilon.liner import LineReceiver
 
 ASK = '_ask'
 ANSWER = '_answer'
@@ -26,25 +27,32 @@ BODY = 'body'
 
 debug = False
 
+
 class JuiceBox(dict):
     """ I am a packet in the JUICE protocol.  """
 
     def __init__(self, __body='', **kw):
         self.update(kw)
         if __body:
-            assert isinstance(__body, str), "body must be a string: %r" % ( repr(__body),)
+            assert isinstance(__body, str), "body must be a string: %r" % (
+                repr(__body),)
             self['body'] = __body
 
     def body():
         def get(self):
-            warnings.warn("body attribute of boxes is now just a regular field",
-                          stacklevel=2)
+            warnings.warn(
+                "body attribute of boxes is now just a regular field",
+                stacklevel=2)
             return self['body']
+
         def set(self, newbody):
-            warnings.warn("body attribute of boxes is now just a regular field",
-                          stacklevel=2)
+            warnings.warn(
+                "body attribute of boxes is now just a regular field",
+                stacklevel=2)
             self['body'] = newbody
-        return get,set
+
+        return get, set
+
     body = property(*body())
 
     def copy(self):
@@ -61,7 +69,7 @@ class JuiceBox(dict):
         for (k, v) in self.items():
             if k == BODY:
                 k = LENGTH
-                v = str(len(self[BODY]))
+                v = str(len(self[BODY])).encode('ascii')
             L.append(k.replace('_', '-').title())
             L.append(': ')
             L.append(v.replace(delimiter, escaped))
@@ -88,14 +96,16 @@ class JuiceBox(dict):
         """
         proto.sendPacket(self)
 
+
 # juice.Box => JuiceBox
 
+
 Box = JuiceBox
+
 
 class TLSBox(JuiceBox):
     def __repr__(self):
         return 'TLS(**%s)' % (super(TLSBox, self).__repr__(),)
-
 
     def __init__(self, __certificate, __verify=None, __sslstarted=None, **kw):
         super(TLSBox, self).__init__(**kw)
@@ -112,19 +122,19 @@ class TLSBox(JuiceBox):
         if self.sslstarted is not None:
             self.sslstarted()
 
+
 class QuitBox(JuiceBox):
     def __repr__(self):
         return 'Quit(**%s)' % (super(QuitBox, self).__repr__(),)
-
 
     def sendTo(self, proto):
         super(QuitBox, self).sendTo(proto)
         proto.transport.loseConnection()
 
+
 class _SwitchBox(JuiceBox):
     def __repr__(self):
         return 'Switch(**%s)' % (super(_SwitchBox, self).__repr__(),)
-
 
     def __init__(self, __proto, **kw):
         super(_SwitchBox, self).__init__(**kw)
@@ -135,26 +145,25 @@ class _SwitchBox(JuiceBox):
         proto._switchTo(self.innerProto)
 
 
-
 class NegotiateBox(JuiceBox):
     def __repr__(self):
         return 'Negotiate(**%s)' % (super(NegotiateBox, self).__repr__(),)
-
 
     def sendTo(self, proto):
         super(NegotiateBox, self).sendTo(proto)
         proto._setProtocolVersion(int(self['version']))
 
 
-
 class JuiceError(Exception):
     pass
+
 
 class RemoteJuiceError(JuiceError):
     """
     This error indicates that something went wrong on the remote end of the
     connection, and the error was serialized and transmitted to you.
     """
+
     def __init__(self, errorCode, description, fatal=False):
         """Create a remote error with an error code and description.
         """
@@ -163,16 +172,20 @@ class RemoteJuiceError(JuiceError):
         self.description = description
         self.fatal = fatal
 
+
 class UnhandledRemoteJuiceError(RemoteJuiceError):
     def __init__(self, description):
         errorCode = "UNHANDLED"
         RemoteJuiceError.__init__(self, errorCode, description)
 
+
 class JuiceBoxError(JuiceError):
     pass
 
+
 class MalformedJuiceBox(JuiceBoxError):
     pass
+
 
 class UnhandledCommand(JuiceError):
     pass
@@ -180,6 +193,7 @@ class UnhandledCommand(JuiceError):
 
 class IncompatibleVersions(JuiceError):
     pass
+
 
 class _Transactor:
     def __init__(self, store, callable):
@@ -191,6 +205,7 @@ class _Transactor:
 
     def __repr__(self):
         return '<Transaction in: %s of: %s>' % (self.store, self.callable)
+
 
 class DispatchMixin:
     baseDispatchPrefix = 'juice_'
@@ -207,26 +222,31 @@ class DispatchMixin:
             # to invoke the command you are trying to invoke.  some objects
             # have commands exposed in a separate namespace for security
             # reasons, since the security model is a role : namespace mapping.
-            log.msg('WRONG NAMESPACE: %r, %r' % (namespace, command.namespaces))
+            log.msg(
+                'WRONG NAMESPACE: %r, %r' % (namespace, command.namespaces))
             return None
+
         def doit(box):
             kw = stringsToObjects(box, command.arguments, proto)
             for name, extraArg in command.extra:
                 kw[name] = extraArg.fromTransport(proto.transport)
-#             def checkIsDict(result):
-#                 if not isinstance(result, dict):
-#                     raise RuntimeError("%r returned %r, not dictionary" % (
-#                             aCallable, result))
-#                 return result
+
+            # def checkIsDict(result):
+            #     if not isinstance(result, dict):
+            #         raise RuntimeError("%r returned %r, not dictionary" % (
+            #                 aCallable, result))
+            #     return result
             def checkKnownErrors(error):
                 key = error.trap(*command.allErrors)
                 code = command.allErrors[key]
                 desc = str(error.value)
                 return Failure(RemoteJuiceError(
-                        code, desc, error in command.fatalErrors))
+                    code, desc, error in command.fatalErrors))
+
             return maybeDeferred(aCallable, **kw).addCallback(
                 command.makeResponse, proto).addErrback(
                 checkKnownErrors)
+
         return doit
 
     def _wrap(self, aCallable):
@@ -262,16 +282,19 @@ class DispatchMixin:
         return getattr(self, fName, None)
 
     def dispatchCommand(self, proto, cmd, box, namespace=None):
-        fObj = self.lookupFunction(proto, self.normalizeCommand(cmd), namespace)
+        fObj = self.lookupFunction(proto, self.normalizeCommand(cmd),
+                                   namespace)
         if fObj is None:
             return fail(UnhandledCommand(cmd))
         return maybeDeferred(self._wrap(fObj), box)
+
 
 PYTHON_KEYWORDS = [
     'and', 'del', 'for', 'is', 'raise', 'assert', 'elif', 'from', 'lambda',
     'return', 'break', 'else', 'global', 'not', 'try', 'class', 'except',
     'if', 'or', 'while', 'continue', 'exec', 'import', 'pass', 'yield',
     'def', 'finally', 'in', 'print']
+
 
 def normalizeKey(key):
     lkey = key.lower().replace('-', '_')
@@ -293,7 +316,7 @@ def parseJuiceHeaders(lines):
         if L[0] == ' ':
             # continuation
             assert key is not None
-            b[key] += '\r\n'+L[1:]
+            b[key] += '\r\n' + L[1:]
             continue
         parts = L.split(': ', 1)
         if len(parts) != 2:
@@ -302,6 +325,7 @@ def parseJuiceHeaders(lines):
         key = normalizeKey(key)
         b[key] = value
     return int(b.pop(LENGTH, 0)), b
+
 
 class JuiceParserBase(DispatchMixin):
 
@@ -326,13 +350,14 @@ class JuiceParserBase(DispatchMixin):
 
     def failAllOutgoing(self, reason):
         OR = list(self._outstandingRequests.items())
-        self._outstandingRequests = None # we can never send another request
+        self._outstandingRequests = None  # we can never send another request
         for key, value in OR:
             value.errback(reason)
 
     def juiceBoxReceived(self, box):
         if debug:
-            log.msg("Juice receive: %s" % pprint.pformat(dict(iter(box.items()))))
+            log.msg(
+                "Juice receive: %s" % pprint.pformat(dict(iter(box.items()))))
 
         if ANSWER in box:
             question = self._outstandingRequests.pop(box[ANSWER])
@@ -346,6 +371,7 @@ class JuiceParserBase(DispatchMixin):
                                          box[ERROR_DESCRIPTION])))
         elif COMMAND in box:
             cmd = box[COMMAND]
+
             def sendAnswer(answerBox):
                 if ASK not in box:
                     return
@@ -353,6 +379,7 @@ class JuiceParserBase(DispatchMixin):
                     return
                 answerBox[ANSWER] = box[ASK]
                 answerBox.sendTo(self)
+
             def sendError(error):
                 if ASK not in box:
                     return error
@@ -365,8 +392,8 @@ class JuiceParserBase(DispatchMixin):
                         errorBox = JuiceBox()
                 else:
                     errorBox = QuitBox()
-                    log.err(error) # here is where server-side logging happens
-                                   # if the error isn't handled
+                    log.err(error)  # here is where server-side logging happens
+                    # if the error isn't handled
                     code = 'UNHANDLED'
                     desc = "Unhandled Remote System Exception "
                 errorBox[ERROR] = box[ASK]
@@ -374,14 +401,18 @@ class JuiceParserBase(DispatchMixin):
                 errorBox[ERROR_CODE] = code
                 if self.transport is not None:
                     errorBox.sendTo(self)
-                return None # intentionally stop the error here: don't log the
-                            # traceback if it's handled, do log it (earlier) if
-                            # it isn't
-            self.dispatchCommand(self, cmd, box).addCallbacks(sendAnswer, sendError
-                                                              ).addErrback(self._puke)
+                return None  # intentionally stop the error here: don't log the
+                # traceback if it's handled, do log it (earlier) if
+                # it isn't
+
+            self.dispatchCommand(self, cmd, box).addCallbacks(sendAnswer,
+                                                              sendError
+                                                              ).addErrback(
+                self._puke)
         else:
             raise RuntimeError(
-                "Empty packet received over connection-oriented juice: %r" % (box,))
+                "Empty packet received over connection-oriented juice: %r" % (
+                    box,))
 
     def sendBoxCommand(self, command, box, requiresAnswer=True):
         """
@@ -405,10 +436,6 @@ class JuiceParserBase(DispatchMixin):
             result = None
         box.sendTo(self)
         return result
-
-
-
-
 
 
 class Argument:
@@ -453,6 +480,7 @@ class Argument:
     def toString(self, inObject):
         raise NotImplementedError()
 
+
 class JuiceList(Argument):
     def __init__(self, subargs):
         self.subargs = subargs
@@ -465,8 +493,9 @@ class JuiceList(Argument):
 
     def toStringProto(self, inObject, proto):
         return ''.join([objectsToStrings(
-                    objects, self.subargs, Box(), proto
-                    ).serialize() for objects in inObject])
+            objects, self.subargs, Box(), proto
+        ).serialize() for objects in inObject])
+
 
 class ListOf(Argument):
     def __init__(self, subarg, delimiter=', '):
@@ -487,16 +516,21 @@ class ListOf(Argument):
             L.append(outString)
         return self.delimiter.join(L)
 
+
 class Integer(Argument):
     fromString = int
+
     def toString(self, inObject):
         return str(int(inObject))
+
 
 class String(Argument):
     def toString(self, inObject):
         return inObject
+
     def fromString(self, inString):
         return inString
+
 
 class EncodedString(Argument):
 
@@ -509,9 +543,12 @@ class EncodedString(Argument):
     def fromString(self, inString):
         return inString.decode(self.encoding)
 
+
 # Temporary backwards compatibility for Exponent
 
+
 Body = String
+
 
 class Unicode(String):
     def toString(self, inObject):
@@ -521,6 +558,7 @@ class Unicode(String):
     def fromString(self, inString):
         # assert isinstance(inString, str)
         return String.fromString(self, inString).decode('utf-8')
+
 
 class Path(Unicode):
     def fromString(self, inString):
@@ -534,46 +572,56 @@ class Float(Argument):
     fromString = float
     toString = str
 
+
 class Base64Binary(Argument):
     def toString(self, inObject):
         return inObject.encode('base64').replace('\n', '')
+
     def fromString(self, inString):
         return inString.decode('base64')
+
 
 class Time(Argument):
     def toString(self, inObject):
         return inObject.asISO8601TimeAndDate()
+
     def fromString(self, inString):
         return extime.Time.fromISO8601TimeAndDate(inString)
+
 
 class ExtraArg:
     def fromTransport(self, inTransport):
         raise NotImplementedError()
 
+
 class Peer(ExtraArg):
     def fromTransport(self, inTransport):
         return inTransport.getQ2QPeer()
+
 
 class PeerDomain(ExtraArg):
     def fromTransport(self, inTransport):
         return inTransport.getQ2QPeer().domain
 
+
 class PeerUser(ExtraArg):
     def fromTransport(self, inTransport):
         return inTransport.getQ2QPeer().resource
+
 
 class Host(ExtraArg):
     def fromTransport(self, inTransport):
         return inTransport.getQ2QHost()
 
+
 class HostDomain(ExtraArg):
     def fromTransport(self, inTransport):
         return inTransport.getQ2QHost().domain
 
+
 class HostUser(ExtraArg):
     def fromTransport(self, inTransport):
         return inTransport.getQ2QHost().resource
-
 
 
 class Boolean(Argument):
@@ -591,15 +639,16 @@ class Boolean(Argument):
         else:
             return 'False'
 
+
 class Command:
     class __metaclass__(type):
         def __new__(cls, name, bases, attrs):
             re = attrs['reverseErrors'] = {}
             er = attrs['allErrors'] = {}
-            for v, k in attrs.get('errors',{}).items():
+            for v, k in attrs.get('errors', {}).items():
                 re[k] = v
                 er[v] = k
-            for v, k in attrs.get('fatalErrors',{}).items():
+            for v, k in attrs.get('fatalErrors', {}).items():
                 re[k] = v
                 er[v] = k
             return type.__new__(cls, name, bases, attrs)
@@ -607,10 +656,10 @@ class Command:
     arguments = []
     response = []
     extra = []
-    namespaces = [None]         # This is set to [None] on purpose: None means
-                                # "no namespace", not "empty list".  "empty
-                                # list" will make your command invalid in _all_
-                                # namespaces, effectively uncallable.
+    namespaces = [None]  # This is set to [None] on purpose: None means
+    # "no namespace", not "empty list".  "empty
+    # list" will make your command invalid in _all_
+    # namespaces, effectively uncallable.
     errors = {}
     fatalErrors = {}
 
@@ -621,7 +670,9 @@ class Command:
         def get(self):
             return self.__class__.__name__
             raise NotImplementedError("Missing command name")
+
         return get,
+
     commandName = property(*commandName())
 
     def __init__(self, **kw):
@@ -631,25 +682,27 @@ class Command:
         for name, arg in self.arguments:
             if normalizeKey(name) not in givenArgs and not arg.optional:
                 forgotten.append(normalizeKey(name))
-#         for v in kw.itervalues():
-#             if v is None:
-#                 from pprint import pformat
-#                 raise RuntimeError("ARGH: %s" % pformat(kw))
+        #         for v in kw.itervalues():
+        #             if v is None:
+        #                 from pprint import pformat
+        #                 raise RuntimeError("ARGH: %s" % pformat(kw))
         if forgotten:
             if len(forgotten) == 1:
                 plural = 'an argument'
             else:
                 plural = 'some arguments'
             raise RuntimeError("You forgot %s to %r: %s" % (
-                    plural, self.commandName, ', '.join(forgotten)))
+                plural, self.commandName, ', '.join(forgotten)))
         forgotten = []
 
     def makeResponse(cls, objects, proto):
         try:
-            return objectsToStrings(objects, cls.response, cls.responseType(), proto)
-        except:
-            log.msg("Exception in %r.makeResponse" % (cls,))
+            return objectsToStrings(objects, cls.response, cls.responseType(),
+                                    proto)
+        except Exception as e:
+            log.msg("Exception in %r.makeResponse [ERROR: %r]" % (cls, e,))
             raise
+
     makeResponse = classmethod(makeResponse)
 
     def do(self, proto, namespace=None, requiresAnswer=True):
@@ -657,13 +710,17 @@ class Command:
             cmd = namespace + ":" + self.commandName
         else:
             cmd = self.commandName
+
         def _massageError(error):
             error.trap(RemoteJuiceError)
             rje = error.value
-            return Failure(self.reverseErrors.get(rje.errorCode, UnhandledRemoteJuiceError)(rje.description))
+            return Failure(self.reverseErrors.get(rje.errorCode,
+                                                  UnhandledRemoteJuiceError)(
+                rje.description))
 
         d = proto.sendBoxCommand(
-            cmd, objectsToStrings(self.structured, self.arguments, self.commandType(),
+            cmd, objectsToStrings(self.structured, self.arguments,
+                                  self.commandType(),
                                   proto),
             requiresAnswer)
 
@@ -701,17 +758,24 @@ class ProtocolSwitchCommand(Command):
     def do(self, proto, namespace=None):
         d = super(ProtocolSwitchCommand, self).do(proto)
         proto._lock()
+
         def switchNow(ign):
-            innerProto = self.protoToSwitchToFactory.buildProtocol(proto.transport.getPeer())
+            innerProto = self.protoToSwitchToFactory.buildProtocol(
+                proto.transport.getPeer())
             proto._switchTo(innerProto, self.protoToSwitchToFactory)
             return ign
+
         def die(ign):
             proto.transport.loseConnection()
             return ign
+
         def handle(ign):
-            self.protoToSwitchToFactory.clientConnectionFailed(None, Failure(CONNECTION_LOST))
+            self.protoToSwitchToFactory.clientConnectionFailed(None, Failure(
+                CONNECTION_LOST))
             return ign
+
         return d.addCallbacks(switchNow, handle).addErrback(die)
+
 
 class Negotiate(Command):
     commandName = 'Negotiate'
@@ -767,12 +831,16 @@ class Juice(LineReceiver, JuiceParserBase):
         self._issueGreeting = issueGreeting
 
     def __repr__(self):
-        return '<%s %s/%s at 0x%x>' % (self.__class__.__name__, self.isClient and 'client' or 'server', self.innerProtocol, id(self))
+        return '<%s %s/%s at 0x%x>' % (
+            self.__class__.__name__,
+            self.isClient and 'client' or 'server',
+            self.innerProtocol, id(self))
 
     __locked = False
 
     def _lock(self):
-        """ Lock this Juice instance so that no further Juice traffic may be sent.
+        """
+        Lock this Juice instance so that no further Juice traffic may be sent.
         This is used when sending a request to switch underlying protocols.
         You probably want to subclass ProtocolSwitchCommand rather than calling
         this directly.
@@ -782,12 +850,14 @@ class Juice(LineReceiver, JuiceParserBase):
     innerProtocol = None
 
     def _switchTo(self, newProto, clientFactory=None):
-        """ Switch this Juice instance to a new protocol.  You need to do this
+        """
+        Switch this Juice instance to a new protocol.  You need to do this
         'simultaneously' on both ends of a connection; the easiest way to do
         this is to use a subclass of ProtocolSwitchCommand.
         """
 
-        assert self.innerProtocol is None, "Protocol can only be safely switched once."
+        assert self.innerProtocol is None,\
+            "Protocol can only be safely switched once."
         self.setRawMode()
         self.innerProtocol = newProto
         self.innerProtocolClientFactory = clientFactory
@@ -808,12 +878,14 @@ class Juice(LineReceiver, JuiceParserBase):
 
         Note: transport.write is never called outside of this method.
         """
-        assert not self.__locked, "You cannot send juice packets when a connection is locked"
+        assert not self.__locked, \
+            "You cannot send juice packets when a connection is locked"
         if self._startingTLSBuffer is not None:
             self._startingTLSBuffer.append(completeBox)
         else:
             if debug:
-                log.msg("Juice send: %s" % pprint.pformat(dict(iter(completeBox.items()))))
+                log.msg("Juice send: %s" % pprint.pformat(
+                    dict(iter(completeBox.items()))))
 
             self.transport.write(completeBox.serialize())
 
@@ -827,10 +899,11 @@ class Juice(LineReceiver, JuiceParserBase):
     def makeConnection(self, transport):
         self._transportPeer = transport.getPeer()
         self._transportHost = transport.getHost()
-        log.msg("%s %s connection established (HOST:%s PEER:%s)" % (self.isClient and "client" or "server",
-                                                                    self.__class__.__name__,
-                                                                    self._transportHost,
-                                                                    self._transportPeer))
+        log.msg("%s %s connection established (HOST:%s PEER:%s)" % (
+            self.isClient and "client" or "server",
+            self.__class__.__name__,
+            self._transportHost,
+            self._transportPeer))
         self._outstandingRequests = {}
         self._requestBuffer = []
         LineReceiver.makeConnection(self, transport)
@@ -867,15 +940,16 @@ class Juice(LineReceiver, JuiceParserBase):
 
     def connectionLost(self, reason):
         log.msg("%s %s connection lost (HOST:%s PEER:%s)" % (
-                self.isClient and 'client' or 'server',
-                self.__class__.__name__,
-                self._transportHost,
-                self._transportPeer))
+            self.isClient and 'client' or 'server',
+            self.__class__.__name__,
+            self._transportHost,
+            self._transportPeer))
         self.failAllOutgoing(reason)
         if self.innerProtocol is not None:
             self.innerProtocol.connectionLost(reason)
             if self.innerProtocolClientFactory is not None:
-                self.innerProtocolClientFactory.clientConnectionLost(None, reason)
+                self.innerProtocolClientFactory.clientConnectionLost(None,
+                                                                     reason)
 
     def lineReceived(self, line):
         if line:
@@ -926,9 +1000,10 @@ class Juice(LineReceiver, JuiceParserBase):
         return version
 
     def renegotiateVersion(self, newVersion):
-        assert newVersion in VERSIONS, (
-            "This side of the connection doesn't support version %r"
-            % (newVersion,))
+        assert \
+            newVersion in VERSIONS, (
+                "This side of the connection doesn't support version %r" %
+                (newVersion,))
         v = VERSIONS[:]
         v.remove(newVersion)
         return Negotiate(versions=[newVersion]).do(self).addCallback(
@@ -939,12 +1014,15 @@ class Juice(LineReceiver, JuiceParserBase):
             if version in VERSIONS:
                 return dict(version=version)
         raise IncompatibleVersions()
+
     command_NEGOTIATE.command = Negotiate
 
 
 VERSIONS = [1]
 
 from io import StringIO
+
+
 class _ParserHelper(Juice):
     def __init__(self):
         Juice.__init__(self, False)
@@ -968,14 +1046,18 @@ class _ParserHelper(Juice):
         p.makeConnection(p)
         p.dataReceived(fileObj.read())
         return p.boxes
+
     parse = classmethod(parse)
 
     def parseString(cls, data):
         return cls.parse(StringIO(data))
+
     parseString = classmethod(parseString)
+
 
 parse = _ParserHelper.parse
 parseString = _ParserHelper.parseString
+
 
 def stringsToObjects(strings, arglist, proto):
     objects = {}
@@ -983,6 +1065,7 @@ def stringsToObjects(strings, arglist, proto):
     for argname, argparser in arglist:
         argparser.fromBox(argname, myStrings, objects, proto)
     return objects
+
 
 def objectsToStrings(objects, arglist, strings, proto):
     myObjects = {}
@@ -993,17 +1076,20 @@ def objectsToStrings(objects, arglist, strings, proto):
         argparser.toBox(argname, strings, myObjects, proto)
     return strings
 
+
 class JuiceServerFactory(ServerFactory):
     protocol = Juice
+
     def buildProtocol(self, addr):
         prot = self.protocol(True)
         prot.factory = self
         return prot
 
+
 class JuiceClientFactory(ClientFactory):
     protocol = Juice
+
     def buildProtocol(self, addr):
         prot = self.protocol(False)
         prot.factory = self
         return prot
-

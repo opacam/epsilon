@@ -5,8 +5,8 @@ __metaclass__ = type
 
 from twisted.internet.protocol import Protocol
 
-class LineReceiver(Protocol):
 
+class LineReceiver(Protocol):
     lineMode = True
     MAX_LINE_LENGTH = 1024 * 1024
     buffer = ''
@@ -63,5 +63,3 @@ class LineReceiver(Protocol):
                 self.rawDataReceived(buffer)
         else:
             self.buffer = buffer
-
-

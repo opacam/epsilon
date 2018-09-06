@@ -6,6 +6,7 @@ Provides an 'attribute' class for one-use descriptors.
 
 attribute = None
 
+
 class _MetaAttribute(type):
     def __new__(meta, name, bases, dict):
         # for reals, yo.
@@ -16,6 +17,7 @@ class _MetaAttribute(type):
         if attribute is None:
             return secretClass
         return secretClass()
+
 
 class attribute(object, metaclass=_MetaAttribute):
     """
@@ -90,7 +92,6 @@ class attribute(object, metaclass=_MetaAttribute):
         raise AttributeError('attribute cannot be removed')
 
 
-
 def requiredAttribute(requiredAttributeName):
     """
     Utility for defining attributes on base classes/mixins which require their
@@ -104,7 +105,8 @@ def requiredAttribute(requiredAttributeName):
     @type requiredAttributeName: C{str}
 
     Example:
-        >>> from epsilon.descriptor import requiredAttribute
+        >>> from epsilon.descriptor import \
+        ...     requiredAttribute
         ...
         >>> class FooTestMixin:
         ...  expectedResult = requiredAttribute('expectedResult')
@@ -128,18 +130,20 @@ def requiredAttribute(requiredAttributeName):
         ... 7
         >>>
     """
+
     class RequiredAttribute(attribute):
         def get(self):
             if requiredAttributeName not in self.__dict__:
                 raise AttributeError(
                     ('Required attribute %r has not been changed'
                      ' from its default value on %r' % (
-                            requiredAttributeName, self)))
+                         requiredAttributeName, self)))
             return self.__dict__[requiredAttributeName]
+
         def set(self, value):
             self.__dict__[requiredAttributeName] = value
-    return RequiredAttribute
 
+    return RequiredAttribute
 
 
 __all__ = ['attribute', 'requiredAttribute']

@@ -1,5 +1,5 @@
-
 from twisted.internet import reactor
+
 
 class TimeoutMixin:
     """Mixin for protocols which wish to timeout connections
@@ -12,7 +12,6 @@ class TimeoutMixin:
 
     def callLater(self, period, func):
         return reactor.callLater(period, func)
-
 
     def resetTimeout(self):
         """Reset the timeout count down"""

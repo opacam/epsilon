@@ -3,8 +3,9 @@
 # See LICENSE for details.
 
 
+import os
+import sys
 
-import sys, os
 
 def pluginPackagePaths(name):
     """

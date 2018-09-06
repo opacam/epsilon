@@ -7,6 +7,7 @@ related to a particular object.
 
 from epsilon.structlike import record
 
+
 class remembered(record('creationFunction')):
     """
     This descriptor decorator is applied to a function to create an attribute
@@ -33,7 +34,6 @@ class remembered(record('creationFunction')):
         rememberme = self.creationFunction(oself)
         oself.__dict__[remembername] = rememberme
         return rememberme
-
 
 
 __all__ = ['remembered']

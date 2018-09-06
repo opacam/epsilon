@@ -6,12 +6,15 @@ from twisted.trial import unittest
 
 from epsilon import descriptor
 
+
 class Test1(object):
     class a(descriptor.attribute):
         def get(self):
             return 1
+
         def set(self, value):
             pass
+
         def delete(self):
             pass
 
@@ -19,6 +22,7 @@ class Test1(object):
 class Test2(object):
     class a(descriptor.attribute):
         "stuff"
+
         def get(self):
             return 10
 
@@ -32,14 +36,12 @@ class DescriptorTest(unittest.TestCase):
         del t.a
         self.assertEqual(t.a, 1)
 
-
     def testCase2(self):
         t = Test2()
         self.assertEqual(Test2.a.__doc__, 'stuff')
         self.assertEqual(t.a, 10)
         self.assertRaises(AttributeError, setattr, t, 'a', 1)
         self.assertRaises(AttributeError, delattr, t, 'a')
-
 
 
 class AbstractClassic:
@@ -57,14 +59,12 @@ class ManifestClassic(AbstractClassic):
     foo = 'bar'
 
 
-
 class AbstractNewStyle(object):
     """
     Toy new-style class used by L{RequiredAttributeTestCase}.
     """
     foo = descriptor.requiredAttribute('foo')
     bar = descriptor.requiredAttribute('bar')
-
 
 
 class ManifestNewStyle(AbstractNewStyle):
@@ -74,18 +74,19 @@ class ManifestNewStyle(AbstractNewStyle):
     foo = 'bar'
 
 
-
 class RequiredAttributeTestCase(unittest.TestCase):
     """
     Tests for L{descriptor.requiredAttribute}.
     """
+
     def _defaultAccess(self, abstractFoo):
-        exception = self.assertRaises(AttributeError, getattr, abstractFoo, 'foo')
+        exception = self.assertRaises(AttributeError, getattr, abstractFoo,
+                                      'foo')
         self.assertEqual(len(exception.args), 1)
         self.assertEqual(
             exception.args[0],
             ("Required attribute 'foo' has not been changed"
-                " from its default value on %r" % (abstractFoo,)))
+             " from its default value on %r" % (abstractFoo,)))
 
     def test_defaultAccessClassic(self):
         """
@@ -95,7 +96,6 @@ class RequiredAttributeTestCase(unittest.TestCase):
         abstractFoo = AbstractClassic()
         self._defaultAccess(abstractFoo)
 
-
     def test_defaultAccessNewStyle(self):
         """
         Accessing a L{descriptor.requiredAttribute} on a new-style class raises
@@ -104,10 +104,8 @@ class RequiredAttributeTestCase(unittest.TestCase):
         abstractFoo = AbstractNewStyle()
         self._defaultAccess(abstractFoo)
 
-
     def _derivedAccess(self, manifestFoo):
         self.assertEqual(manifestFoo.foo, 'bar')
-
 
     def test_derivedAccessClassic(self):
         """
@@ -117,7 +115,6 @@ class RequiredAttributeTestCase(unittest.TestCase):
         manifestFoo = ManifestClassic()
         self._derivedAccess(manifestFoo)
 
-
     def test_derivedAccessNewStyle(self):
         """
         If a new-style derived class sets a new value for a
@@ -126,11 +123,9 @@ class RequiredAttributeTestCase(unittest.TestCase):
         manifestFoo = ManifestNewStyle()
         self._derivedAccess(manifestFoo)
 
-
     def _instanceAccess(self, abstractMadeManifest):
         abstractMadeManifest.foo = 123
         self.assertEqual(abstractMadeManifest.foo, 123)
-
 
     def test_instanceAccessClassic(self):
         """
@@ -140,7 +135,6 @@ class RequiredAttributeTestCase(unittest.TestCase):
         abstractMadeManifest = AbstractClassic()
         self._instanceAccess(abstractMadeManifest)
 
-
     def test_instanceAccessNewStyle(self):
         """
         Accessing a L{descriptor.requiredAttribute} after setting a value for
@@ -148,7 +142,6 @@ class RequiredAttributeTestCase(unittest.TestCase):
         """
         abstractMadeManifest = AbstractNewStyle()
         self._instanceAccess(abstractMadeManifest)
-
 
     def test_instanceAttributesUnrelatedClassic(self):
         """
@@ -159,7 +152,6 @@ class RequiredAttributeTestCase(unittest.TestCase):
         partiallyAbstract = AbstractClassic()
         partiallyAbstract.bar = 123
         self._defaultAccess(partiallyAbstract)
-
 
     def test_instanceAttributesUnrelatedNewStyle(self):
         """

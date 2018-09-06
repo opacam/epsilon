@@ -4,11 +4,10 @@
 Tests for L{epsilon.process}.
 """
 
-from zope.interface.verify import verifyObject
-
-from twisted.trial.unittest import TestCase
 from twisted.application.service import IService, MultiService
 from twisted.internet.protocol import Protocol
+from twisted.trial.unittest import TestCase
+from zope.interface.verify import verifyObject
 
 from epsilon import process
 
@@ -19,12 +18,12 @@ class StandardIOServiceTests(TestCase):
     associates a L{IProtocol} provider with stdin and stdout when it is
     started.
     """
+
     def test_interface(self):
         """
         L{StandardIOService} instances provide L{IService}.
         """
         verifyObject(IService, process.StandardIOService(None))
-
 
     def test_startService(self):
         """
@@ -39,7 +38,6 @@ class StandardIOServiceTests(TestCase):
         service.startService()
         self.assertEqual(L, [proto])
 
-
     def test_setName(self):
         """
         L{StandardIOService.setName} sets the C{name} attribute.
@@ -47,7 +45,6 @@ class StandardIOServiceTests(TestCase):
         service = process.StandardIOService(None)
         service.setName("foo")
         self.assertEqual(service.name, "foo")
-
 
     def test_setServiceParent(self):
         """
@@ -59,7 +56,6 @@ class StandardIOServiceTests(TestCase):
         service.setServiceParent(parent)
         self.assertEqual(list(parent), [service])
         self.assertIdentical(service.parent, parent)
-
 
     def test_disownServiceParent(self):
         """

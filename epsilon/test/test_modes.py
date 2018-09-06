@@ -1,22 +1,23 @@
-
 from twisted.trial import unittest
 
 from epsilon.modal import mode, Modal
 
-class ModalTestClass(Modal):
 
+class ModalTestClass(Modal):
     modeAttribute = 'mode'
     initialMode = 'alpha'
 
     class alpha(mode):
         def one(self):
             return 'alpha-one'
+
         def two(self):
             return 'alpha-two'
 
     class beta(mode):
         def two(self):
             return 'beta-two'
+
         def three(self):
             return 'beta-three'
 
@@ -32,11 +33,14 @@ class ModalTestClass(Modal):
         def change(self):
             return 'delta-change'
 
+
 class ModalTestSubclass(ModalTestClass):
     pass
 
+
 class ModalityTestCase(unittest.TestCase):
     modalFactory = ModalTestClass
+
     def testModalMethods(self):
         x = self.modalFactory()
         self.assertEqual(x.one(), 'alpha-one')

@@ -1,10 +1,12 @@
 # Copyright 2005 Divmod, Inc.  See LICENSE file for details
 
 
-from epsilon import juice
 from epsilon.test import iosim
-from twisted.trial import unittest
 from twisted.internet import protocol, defer
+from twisted.trial import unittest
+
+from epsilon import juice
+
 
 class TestProto(protocol.Protocol):
     def __init__(self, onConnLost, dataToSend):
@@ -22,6 +24,7 @@ class TestProto(protocol.Protocol):
     def connectionLost(self, reason):
         self.onConnLost.callback(self.data)
 
+
 class SimpleSymmetricProtocol(juice.Juice):
 
     def sendHello(self, text):
@@ -37,13 +40,16 @@ class SimpleSymmetricProtocol(juice.Juice):
     def juice_GOODBYE(self, box):
         return juice.QuitBox(goodbye='world')
 
+
 class UnfriendlyGreeting(Exception):
     """Greeting was insufficiently kind.
     """
 
+
 class UnknownProtocol(Exception):
     """Asked to switch to the wrong protocol.
     """
+
 
 class Hello(juice.Command):
     commandName = 'hello'
@@ -52,22 +58,26 @@ class Hello(juice.Command):
 
     errors = {UnfriendlyGreeting: 'UNFRIENDLY'}
 
+
 class Goodbye(juice.Command):
     commandName = 'goodbye'
     responseType = juice.QuitBox
+
 
 class GetList(juice.Command):
     commandName = 'getlist'
     arguments = [('length', juice.Integer())]
     response = [('body', juice.JuiceList([('x', juice.Integer())]))]
 
+
 class TestSwitchProto(juice.ProtocolSwitchCommand):
     commandName = 'Switch-Proto'
 
     arguments = [
         ('name', juice.String()),
-        ]
+    ]
     errors = {UnknownProtocol: 'UNKNOWN'}
+
 
 class SingleUseFactory(protocol.ClientFactory):
     def __init__(self, proto):
@@ -77,31 +87,39 @@ class SingleUseFactory(protocol.ClientFactory):
         p, self.proto = self.proto, None
         return p
 
+
 class SimpleSymmetricCommandProtocol(juice.Juice):
     maybeLater = None
+
     def __init__(self, issueGreeting, onConnLost=None):
         juice.Juice.__init__(self, issueGreeting)
         self.onConnLost = onConnLost
 
     def sendHello(self, text):
         return Hello(hello=text).do(self)
+
     def sendGoodbye(self):
         return Goodbye().do(self)
+
     def command_HELLO(self, hello):
         if hello.startswith('fuck'):
             raise UnfriendlyGreeting("Don't be a dick.")
         return dict(hello=hello)
+
     def command_GETLIST(self, length):
         return {'body': [dict(x=1)] * length}
+
     def command_GOODBYE(self):
         return dict(goodbye='world')
+
     command_HELLO.command = Hello
     command_GOODBYE.command = Goodbye
     command_GETLIST.command = GetList
 
     def switchToTestProtocol(self):
         p = TestProto(self.onConnLost, SWITCH_CLIENT_DATA)
-        return TestSwitchProto(SingleUseFactory(p), name='test-proto').do(self).addCallback(lambda ign: p)
+        return TestSwitchProto(SingleUseFactory(p), name='test-proto').do(
+            self).addCallback(lambda ign: p)
 
     def command_SWITCH_PROTO(self, name):
         if name == 'test-proto':
@@ -110,10 +128,12 @@ class SimpleSymmetricCommandProtocol(juice.Juice):
 
     command_SWITCH_PROTO.command = TestSwitchProto
 
+
 class DeferredSymmetricCommandProtocol(SimpleSymmetricCommandProtocol):
     def command_SWITCH_PROTO(self, name):
         if name == 'test-proto':
-            self.maybeLaterProto = TestProto(self.onConnLost, SWITCH_SERVER_DATA)
+            self.maybeLaterProto = TestProto(self.onConnLost,
+                                             SWITCH_SERVER_DATA)
             self.maybeLater = defer.Deferred()
             return self.maybeLater
         raise UnknownProtocol(name)
@@ -122,11 +142,17 @@ class DeferredSymmetricCommandProtocol(SimpleSymmetricCommandProtocol):
 
 
 class SSPF: protocol = SimpleSymmetricProtocol
+
+
 class SSSF(SSPF, protocol.ServerFactory): pass
+
+
 class SSCF(SSPF, protocol.ClientFactory): pass
 
+
 def connectedServerAndClient(ServerClass=lambda: SimpleSymmetricProtocol(True),
-                             ClientClass=lambda: SimpleSymmetricProtocol(False),
+                             ClientClass=lambda: SimpleSymmetricProtocol(
+                                 False),
                              *a, **kw):
     """Returns a 3-tuple: (client, server, pump)
     """
@@ -134,10 +160,13 @@ def connectedServerAndClient(ServerClass=lambda: SimpleSymmetricProtocol(True),
         ServerClass, ClientClass,
         *a, **kw)
 
+
 class TotallyDumbProtocol(protocol.Protocol):
     buf = ''
+
     def dataReceived(self, data):
         self.buf += data
+
 
 class LiteralJuice(juice.Juice):
     def __init__(self, issueGreeting):
@@ -147,6 +176,7 @@ class LiteralJuice(juice.Juice):
     def juiceBoxReceived(self, box):
         self.boxes.append(box)
         return
+
 
 class LiteralParsingTest(unittest.TestCase):
     def testBasicRequestResponse(self):
@@ -158,7 +188,7 @@ class LiteralParsingTest(unittest.TestCase):
 Hello: %s
 World: this header is ignored
 
-""" % (ASKTOK, HELLO,)).replace('\n','\r\n'))
+""" % (ASKTOK, HELLO,)).replace('\n', '\r\n'))
         p.flush()
         asserts = {'hello': HELLO,
                    '-answer': ASKTOK}
@@ -169,8 +199,9 @@ World: this header is ignored
             self.assertEqual(v, asserts[k.lower()])
 
     def testParsingRoundTrip(self):
-        c, s, p = connectedServerAndClient(ClientClass=lambda: LiteralJuice(False),
-                                           ServerClass=lambda: LiteralJuice(True))
+        c, s, p = connectedServerAndClient(
+            ClientClass=lambda: LiteralJuice(False),
+            ServerClass=lambda: LiteralJuice(True))
 
         SIMPLE = ('simple', 'test')
         CE = ('ceq', ': ')
@@ -190,7 +221,7 @@ World: this header is ignored
             [CE, CR, LF],
             [SIMPLE, NEWLINE, CE, NEWLINE2],
             [BODYTEST, SIMPLE, NEWLINE]
-            ]
+        ]
 
         for test in testData:
             jb = juice.Box()
@@ -199,8 +230,10 @@ World: this header is ignored
             p.flush()
             self.assertEqual(s.boxes[-1], jb)
 
+
 SWITCH_CLIENT_DATA = 'Success!'
 SWITCH_SERVER_DATA = 'No, really.  Success.'
+
 
 class AppLevelTest(unittest.TestCase):
     def testHelloWorld(self):
@@ -222,9 +255,10 @@ class AppLevelTest(unittest.TestCase):
         self.assertEqual(L[0]['hello'], HELLO)
 
     def testHelloErrorHandling(self):
-        L=[]
-        c, s, p = connectedServerAndClient(ServerClass=lambda: SimpleSymmetricCommandProtocol(True),
-                                           ClientClass=lambda: SimpleSymmetricCommandProtocol(False))
+        L = []
+        c, s, p = connectedServerAndClient(
+            ServerClass=lambda: SimpleSymmetricCommandProtocol(True),
+            ClientClass=lambda: SimpleSymmetricCommandProtocol(False))
         HELLO = 'fuck you'
         c.sendHello(HELLO).addErrback(L.append)
         p.flush()
@@ -232,8 +266,9 @@ class AppLevelTest(unittest.TestCase):
         self.assertEqual(str(L[0].value), "Don't be a dick.")
 
     def testJuiceListCommand(self):
-        c, s, p = connectedServerAndClient(ServerClass=lambda: SimpleSymmetricCommandProtocol(True),
-                                           ClientClass=lambda: SimpleSymmetricCommandProtocol(False))
+        c, s, p = connectedServerAndClient(
+            ServerClass=lambda: SimpleSymmetricCommandProtocol(True),
+            ClientClass=lambda: SimpleSymmetricCommandProtocol(False))
         L = []
         GetList(length=10).do(c).addCallback(L.append)
         p.flush()
@@ -245,8 +280,9 @@ class AppLevelTest(unittest.TestCase):
         self.assertRaises(RuntimeError, Hello)
 
     def testSupportsVersion1(self):
-        c, s, p = connectedServerAndClient(ServerClass=lambda: juice.Juice(True),
-                                           ClientClass=lambda: juice.Juice(False))
+        c, s, p = connectedServerAndClient(
+            ServerClass=lambda: juice.Juice(True),
+            ClientClass=lambda: juice.Juice(False))
         negotiatedVersion = []
         s.renegotiateVersion(1).addCallback(negotiatedVersion.append)
         p.flush()
@@ -267,7 +303,8 @@ class AppLevelTest(unittest.TestCase):
         switchDeferred = c.switchToTestProtocol()
 
         def cbConnsLost(xxx_todo_changeme):
-            ((serverSuccess, serverData), (clientSuccess, clientData)) = xxx_todo_changeme
+            ((serverSuccess, serverData),
+             (clientSuccess, clientData)) = xxx_todo_changeme
             self.assertTrue(serverSuccess)
             self.assertTrue(clientSuccess)
             self.assertEqual(''.join(serverData), SWITCH_CLIENT_DATA)
@@ -275,7 +312,8 @@ class AppLevelTest(unittest.TestCase):
             self.testSucceeded = True
 
         def cbSwitch(proto):
-            return defer.DeferredList([serverDeferred, clientDeferred]).addCallback(cbConnsLost)
+            return defer.DeferredList(
+                [serverDeferred, clientDeferred]).addCallback(cbConnsLost)
 
         switchDeferred.addCallback(cbSwitch)
         p.flush()
@@ -285,4 +323,5 @@ class AppLevelTest(unittest.TestCase):
         self.assertTrue(self.testSucceeded)
 
     def testProtocolSwitchDeferred(self):
-        return self.testProtocolSwitch(switcher=DeferredSymmetricCommandProtocol)
+        return self.testProtocolSwitch(
+            switcher=DeferredSymmetricCommandProtocol)

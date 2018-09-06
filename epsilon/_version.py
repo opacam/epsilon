@@ -1,4 +1,3 @@
-
 # This file helps to compute a version number in source trees obtained from
 # git-archive tarball (such as those provided by githubs download-from-tag
 # feature). Distribution tarballs (built by setup.py sdist) and build
@@ -57,6 +56,7 @@ def register_vcs_handler(vcs, method):  # decorator
             HANDLERS[vcs] = {}
         HANDLERS[vcs][method] = f
         return f
+
     return decorate
 
 
@@ -100,7 +100,7 @@ def versions_from_parentdir(parentdir_prefix, root, verbose):
     if not dirname.startswith(parentdir_prefix):
         if verbose:
             print(("guessing rootdir is '%s', but '%s' doesn't start with "
-                  "prefix '%s'" % (root, dirname, parentdir_prefix)))
+                   "prefix '%s'" % (root, dirname, parentdir_prefix)))
         raise NotThisMethod("rootdir doesn't start with parentdir_prefix")
     return {"version": dirname[len(parentdir_prefix):],
             "full-revisionid": None,
@@ -155,7 +155,7 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose):
         # "stabilization", as well as "HEAD" and "master".
         tags = set([r for r in refs if re.search(r'\d', r)])
         if verbose:
-            print(("discarding '%s', no digits" % ",".join(refs-tags)))
+            print(("discarding '%s', no digits" % ",".join(refs - tags)))
     if verbose:
         print(("likely tags: %s" % ",".join(sorted(tags))))
     for ref in sorted(tags):

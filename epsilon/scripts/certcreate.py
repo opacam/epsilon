@@ -16,7 +16,8 @@ class Options(usage.Options):
         ["hostname", "h", "divmod.com", None],
         ["email", "e", "support@divmod.org", None],
 
-        ["filename", "f", "server.pem", "Name of the file to which to write the PEM."],
+        ["filename", "f", "server.pem",
+         "Name of the file to which to write the PEM."],
         ["serial-number", "S", 1, None],
     ]
 
@@ -38,7 +39,7 @@ def createSSLCertificate(opts):
         sslopt[y] = opts[x]
     serialNumber = int(opts['serial-number'])
     ssc = KeyPair.generate().selfSignedCert(serialNumber, **sslopt)
-    file(opts['filename'], 'w').write(ssc.dumpPEM())
+    open(opts['filename'], 'w').write(ssc.dumpPEM())
     if not opts['quiet']:
         print('Wrote SSL certificate:')
         print(ssc.inspect())

@@ -5,14 +5,13 @@ An AMP client which connects to and authenticates with an AMP server, then
 issues a command.
 """
 
-from twisted.internet.protocol import ClientCreator
+from .auth_server import Add
 from twisted.cred.credentials import UsernamePassword
+from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP
 
-from epsilon.react import react
 from epsilon.ampauth import login
-
-from auth_server import Add
+from epsilon.react import react
 
 
 def add(proto):
@@ -34,4 +33,5 @@ def main(reactor):
 
 if __name__ == '__main__':
     from twisted.internet import reactor
+
     react(reactor, main, [])

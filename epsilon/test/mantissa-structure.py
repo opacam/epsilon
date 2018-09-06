@@ -1,7 +1,5 @@
-
-import sys
 import os
-
+import sys
 from os.path import join as opj
 
 projectName = sys.argv[1]
@@ -12,14 +10,14 @@ codeDir = projectName.lower()
 os.mkdir(topDir)
 os.mkdir(opj(topDir, codeDir))
 
-file(opj(topDir, codeDir, '__init__.py'), 'w').write("""
+open(opj(topDir, codeDir, '__init__.py'), 'w').write("""
 # Don't put code here.
 from twisted.python.versions import Version
 version = Version(%r, 0, 0, 1)
 
-""" %(codeDir,))
+""" % (codeDir,))
 
-file(opj(topDir, codeDir, codeDir+'_model.py'),
+open(opj(topDir, codeDir, codeDir + '_model.py'),
      'w').write("""
 
 from axiom.item import Item
@@ -39,10 +37,10 @@ class %sStart(Item):
 
 os.mkdir(opj(topDir, codeDir, 'test'))
 
-file(opj(topDir, codeDir, 'test', '__init__.py'), 'w').write(
+open(opj(topDir, codeDir, 'test', '__init__.py'), 'w').write(
     "# Don't put code here.")
 
-file(opj(topDir, codeDir, 'test', 'test_'+codeDir+'.py'),
+open(opj(topDir, codeDir, 'test', 'test_' + codeDir + '.py'),
      'w').write("""
 
 from axiom.store import Store
@@ -64,4 +62,3 @@ class BasicTest(unittest.TestCase):
         self.store.close()
 
 """ % (codeDir, codeDir, codeDir, topDir))
-

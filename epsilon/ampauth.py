@@ -8,14 +8,13 @@ L{cred<twisted.cred>}.
 
 from hashlib import sha1
 
-from zope.interface import implements
-
-from twisted.python.randbytes import secureRandom
-from twisted.cred.error import UnauthorizedLogin
-from twisted.cred.credentials import IUsernameHashedPassword, IUsernamePassword
 from twisted.cred.checkers import ICredentialsChecker
-from twisted.protocols.amp import IBoxReceiver, String, Command, AMP
+from twisted.cred.credentials import IUsernameHashedPassword, IUsernamePassword
+from twisted.cred.error import UnauthorizedLogin
 from twisted.internet.protocol import ServerFactory
+from twisted.protocols.amp import IBoxReceiver, String, Command, AMP
+from twisted.python.randbytes import secureRandom
+from zope.interface import implementer
 
 from epsilon.iepsilon import IOneTimePad
 from epsilon.structlike import record
@@ -30,20 +29,18 @@ class UnhandledCredentials(Exception):
     """
 
 
-
 class OTPLogin(Command):
     """
     Command to initiate a login attempt where a one-time pad is to be used in
     place of username/password credentials.
     """
-    arguments = [('pad', String())]
+    arguments = [(b'pad', String())]
 
     errors = {
         # Invalid username or password
-        UnauthorizedLogin: 'UNAUTHORIZED_LOGIN',
+        UnauthorizedLogin: b'UNAUTHORIZED_LOGIN',
         # No IBoxReceiver avatar
-        NotImplementedError: 'NOT_IMPLEMENTED_ERROR'}
-
+        NotImplementedError: b'NOT_IMPLEMENTED_ERROR'}
 
 
 class PasswordLogin(Command):
@@ -52,9 +49,8 @@ class PasswordLogin(Command):
     to this command is a challenge which must be responded to based on the
     correct password associated with the username given to this command.
     """
-    arguments = [('username', String())]
-    response = [('challenge', String())]
-
+    arguments = [(b'username', String())]
+    response = [(b'challenge', String())]
 
 
 def _calcResponse(challenge, nonce, password):
@@ -76,8 +72,7 @@ def _calcResponse(challenge, nonce, password):
     @rtype: C{str}
     @return: A hash constructed from the three parameters.
     """
-    return sha1('%s %s %s' % (challenge, nonce, password)).digest()
-
+    return sha1(b'%r %r %r' % (challenge, nonce, password)).digest()
 
 
 class PasswordChallengeResponse(Command):
@@ -89,14 +84,14 @@ class PasswordChallengeResponse(Command):
     @param cnonce: A randomly generated string used only in this response.
     @param response: The SHA-1 hash of the challenge, cnonce, and password.
     """
-    arguments = [('cnonce', String()),
-                 ('response', String())]
+    arguments = [(b'cnonce', String()),
+                 (b'response', String())]
 
     errors = {
         # Invalid username or password
-        UnauthorizedLogin: 'UNAUTHORIZED_LOGIN',
+        UnauthorizedLogin: b'UNAUTHORIZED_LOGIN',
         # No IBoxReceiver avatar
-        NotImplementedError: 'NOT_IMPLEMENTED_ERROR'}
+        NotImplementedError: b'NOT_IMPLEMENTED_ERROR'}
 
     @classmethod
     def determineFrom(cls, challenge, password):
@@ -112,13 +107,12 @@ class PasswordChallengeResponse(Command):
         return dict(cnonce=nonce, response=response)
 
 
-
+@implementer(IUsernameHashedPassword)
 class _AMPUsernamePassword(record('username challenge nonce response')):
     """
     L{IUsernameHashedPassword} implementation used by L{PasswordLogin} and
     related commands.
     """
-    implements(IUsernameHashedPassword)
 
     def checkPassword(self, password):
         """
@@ -138,7 +132,7 @@ class _AMPUsernamePassword(record('username challenge nonce response')):
         return correctResponse == self.response
 
 
-
+@implementer(IOneTimePad)
 class _AMPOneTimePad(record('padValue')):
     """
     L{IOneTimePad} implementation used by L{OTPLogin}.
@@ -146,8 +140,6 @@ class _AMPOneTimePad(record('padValue')):
     @ivar padValue: The value of the one-time pad.
     @type padValue: C{str}
     """
-    implements(IOneTimePad)
-
 
 
 class CredReceiver(AMP):
@@ -187,21 +179,21 @@ class CredReceiver(AMP):
         self.username = username
         return {'challenge': self.challenge}
 
-
     def _login(self, credentials):
         """
         Actually login to our portal with the given credentials.
         """
         d = self.portal.login(credentials, None, IBoxReceiver)
+
         def cbLoggedIn(xxx_todo_changeme):
             (interface, avatar, logout) = xxx_todo_changeme
             self.logout = logout
             self.boxReceiver = avatar
             self.boxReceiver.startReceivingBoxes(self.boxSender)
             return {}
+
         d.addCallback(cbLoggedIn)
         return d
-
 
     @PasswordChallengeResponse.responder
     def passwordChallengeResponse(self, cnonce, response):
@@ -211,14 +203,12 @@ class CredReceiver(AMP):
         return self._login(_AMPUsernamePassword(
             self.username, self.challenge, cnonce, response))
 
-
     @OTPLogin.responder
     def otpLogin(self, pad):
         """
         Verify the given pad.
         """
         return self._login(_AMPOneTimePad(pad))
-
 
     def connectionLost(self, reason):
         """
@@ -230,7 +220,7 @@ class CredReceiver(AMP):
             self.boxReceiver = self.logout = None
 
 
-
+@implementer(ICredentialsChecker)
 class OneTimePadChecker(record('pads')):
     """
     Checker which validates one-time pads.
@@ -238,7 +228,6 @@ class OneTimePadChecker(record('pads')):
     @ivar pads: Mapping between valid one-time pads and avatar IDs.
     @type pads: C{dict}
     """
-    implements(ICredentialsChecker)
 
     credentialInterfaces = (IOneTimePad,)
 
@@ -247,7 +236,6 @@ class OneTimePadChecker(record('pads')):
         if credentials.padValue in self.pads:
             return self.pads.pop(credentials.padValue)
         raise UnauthorizedLogin('Unknown one-time pad')
-
 
 
 class CredAMPServerFactory(ServerFactory):
@@ -265,12 +253,10 @@ class CredAMPServerFactory(ServerFactory):
     def __init__(self, portal):
         self.portal = portal
 
-
     def buildProtocol(self, addr):
         proto = ServerFactory.buildProtocol(self, addr)
         proto.portal = self.portal
         return proto
-
 
 
 def login(client, credentials):
@@ -293,14 +279,15 @@ def login(client, credentials):
         raise UnhandledCredentials()
     d = client.callRemote(
         PasswordLogin, username=credentials.username)
+
     def cbChallenge(response):
         args = PasswordChallengeResponse.determineFrom(
             response['challenge'], credentials.password)
         d = client.callRemote(PasswordChallengeResponse, **args)
         return d.addCallback(lambda ignored: client)
+
     d.addCallback(cbChallenge)
     return d
-
 
 
 __all__ = [

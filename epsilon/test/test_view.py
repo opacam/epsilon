@@ -1,4 +1,3 @@
-
 """
 Tests for L{epsilon.view}.
 """
@@ -14,6 +13,7 @@ class SlicedViewTests(TestCase):
     """
     Tests for L{SlicedView}
     """
+
     def test_outOfBoundsPositiveStart(self):
         """
         Verify that the C{__getitem__} of a L{SlicedView} constructed with a
@@ -23,7 +23,6 @@ class SlicedViewTests(TestCase):
         sequence = ['a', 'b', 'c']
         view = SlicedView(sequence, slice(3, None))
         self.assertRaises(IndexError, getitem, view, 0)
-
 
     def test_outOfBoundsNegativeStart(self):
         """
@@ -39,7 +38,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[2], 'c')
         self.assertRaises(IndexError, getitem, view, 3)
 
-
     def test_outOfBoundsPositiveStop(self):
         """
         Verify that the C{__getitem__} of a L{SlicedView} constructed with a
@@ -53,7 +51,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[2], 'c')
         self.assertRaises(IndexError, getitem, view, 3)
 
-
     def test_outOfBoundsNegativeStop(self):
         """
         Verify that the C{__getitem__} of a L{SlicedView} constructed with a
@@ -63,7 +60,6 @@ class SlicedViewTests(TestCase):
         sequence = ['a', 'b', 'c']
         view = SlicedView(sequence, slice(None, -4))
         self.assertRaises(IndexError, getitem, view, 0)
-
 
     def test_positiveIndices(self):
         """
@@ -78,7 +74,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[2], 'c')
         self.assertRaises(IndexError, getitem, view, 3)
 
-
     def test_negativeIndices(self):
         """
         Similar to L{test_positiveIndices}, but for negative indices.
@@ -90,7 +85,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-3], 'a')
         self.assertRaises(IndexError, getitem, view, -4)
 
-
     def test_length(self):
         """
         Verify that L{SlicedView.__len__} returns the length of the underlying
@@ -101,7 +95,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(None))
         self.assertEqual(len(view), 3)
 
-
     def test_lengthEmptySequence(self):
         """
         Verify that L{SlicedView.__len__} works with empty sequences.
@@ -109,7 +102,6 @@ class SlicedViewTests(TestCase):
         sequence = []
         view = SlicedView([], slice(None))
         self.assertEqual(len(view), 0)
-
 
     def test_positiveStartLength(self):
         """
@@ -120,7 +112,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(1, None))
         self.assertEqual(len(view), 2)
 
-
     def test_negativeStartLength(self):
         """
         Similar to L{test_length}, but for a L{SlicedView} constructed with a
@@ -129,7 +120,6 @@ class SlicedViewTests(TestCase):
         sequence = ['a', 'b', 'c']
         view = SlicedView(sequence, slice(-2, None))
         self.assertEqual(len(view), 2)
-
 
     def test_positiveStopLength(self):
         """
@@ -140,7 +130,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(None, 2))
         self.assertEqual(len(view), 2)
 
-
     def test_negativeStopLength(self):
         """
         Similar to L{test_length}, but for a L{SlicedView} constructed with a
@@ -149,7 +138,6 @@ class SlicedViewTests(TestCase):
         sequence = ['a', 'b', 'c']
         view = SlicedView(sequence, slice(None, -1))
         self.assertEqual(len(view), 2)
-
 
     def test_positiveStartPositiveStopLength(self):
         """
@@ -160,7 +148,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(1, 2))
         self.assertEqual(len(view), 1)
 
-
     def test_positiveStartNegativeStopLength(self):
         """
         Similar to L{test_length}, but for a L{SlicedView} constructed with a
@@ -169,7 +156,6 @@ class SlicedViewTests(TestCase):
         sequence = ['a', 'b', 'c']
         view = SlicedView(sequence, slice(1, -1))
         self.assertEqual(len(view), 1)
-
 
     def test_negativeStartPositiveStopLength(self):
         """
@@ -180,7 +166,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(-2, 2))
         self.assertEqual(len(view), 1)
 
-
     def test_negativeStartNegativeStopLength(self):
         """
         Similar to L{test_length}, but for a L{SlicedView} constructed with a
@@ -190,7 +175,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(-2, -1))
         self.assertEqual(len(view), 1)
 
-
     def test_extendedSliceLength(self):
         """
         Verify that L{SlicedView.__len__} reports the correct length when a
@@ -199,7 +183,6 @@ class SlicedViewTests(TestCase):
         sequence = ['a', 'b', 'c', 'd', 'e']
         view = SlicedView(sequence, slice(1, -1, 2))
         self.assertEqual(len(view), 2)
-
 
     def test_positiveStartOnlyPositiveIndices(self):
         """
@@ -214,7 +197,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[1], 'c')
         self.assertRaises(IndexError, getitem, view, 2)
 
-
     def test_positiveStartOnlyNegativeIndices(self):
         """
         Similar to L{test_positiveStartOnlyPositiveIndices}, but cover
@@ -225,7 +207,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-1], 'c')
         self.assertEqual(view[-2], 'b')
         self.assertRaises(IndexError, getitem, view, -3)
-
 
     def test_negativeStartOnlyPositiveIndices(self):
         """
@@ -238,7 +219,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[1], 'c')
         self.assertRaises(IndexError, getitem, view, 2)
 
-
     def test_negativeStartOnlyNegativeIndices(self):
         """
         Similar to L{test_negativeStartOnlyPositiveIndices}, but cover negative
@@ -249,7 +229,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-1], 'c')
         self.assertEqual(view[-2], 'b')
         self.assertRaises(IndexError, getitem, view, -3)
-
 
     def test_positiveStopOnlyPositiveIndices(self):
         """
@@ -264,7 +243,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[1], 'b')
         self.assertRaises(IndexError, getitem, view, 2)
 
-
     def test_positveStopOnlyNegativeIndices(self):
         """
         Similar to L{test_positiveStopOnlyPositiveIndices}, but cover negative
@@ -275,7 +253,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-1], 'b')
         self.assertEqual(view[-2], 'a')
         self.assertRaises(IndexError, getitem, view, -3)
-
 
     def test_negativeStopOnlyPositiveIndices(self):
         """
@@ -288,7 +265,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[1], 'b')
         self.assertRaises(IndexError, getitem, view, 2)
 
-
     def test_negativeStopOnlyNegativeIndices(self):
         """
         Similar to L{test_negativeStopOnlyPositiveIndices}, but cover negative
@@ -299,7 +275,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-1], 'b')
         self.assertEqual(view[-2], 'a')
         self.assertRaises(IndexError, getitem, view, -3)
-
 
     def test_positiveStartPositiveStopPositiveIndices(self):
         """
@@ -316,7 +291,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[1], 'c')
         self.assertRaises(IndexError, getitem, view, 2)
 
-
     def test_positiveStartPositiveStopNegativeIndices(self):
         """
         Similar to L{test_positiveStartPositiveStopPositiveIndices}, but cover
@@ -327,7 +301,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-1], 'c')
         self.assertEqual(view[-2], 'b')
         self.assertRaises(IndexError, getitem, view, -3)
-
 
     def test_positiveStartNegativeStopPositiveIndices(self):
         """
@@ -342,7 +315,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[0], 'b')
         self.assertRaises(IndexError, getitem, view, 1)
 
-
     def test_positiveStartNegativeStopNegativeIndices(self):
         """
         Similar to L{test_positiveStartNegativeStopPositiveIndices}, but cover
@@ -352,7 +324,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(1, -1))
         self.assertEqual(view[-1], 'b')
         self.assertRaises(IndexError, getitem, view, -2)
-
 
     def test_negativeStartPositiveStopPositiveIndices(self):
         """
@@ -364,7 +335,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[0], 'b')
         self.assertRaises(IndexError, getitem, view, 1)
 
-
     def test_negativeStartPositiveStopNegativeIndices(self):
         """
         Similar to L{test_negativeStartPositiveStopPositiveIndices}, but cover
@@ -374,7 +344,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(-2, 2))
         self.assertEqual(view[-1], 'b')
         self.assertRaises(IndexError, getitem, view, -2)
-
 
     def test_negativeStartNegativeStopPositiveIndices(self):
         """
@@ -386,7 +355,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[0], 'b')
         self.assertRaises(IndexError, getitem, view, 1)
 
-
     def test_negativeStartNegativeStopNegativeIndices(self):
         """
         Similar to L{test_negativeStartPositiveStopPositiveIndices}, but cover
@@ -396,7 +364,6 @@ class SlicedViewTests(TestCase):
         view = SlicedView(sequence, slice(-2, -1))
         self.assertEqual(view[-1], 'b')
         self.assertRaises(IndexError, getitem, view, -2)
-
 
     def test_positiveStepPositiveIndices(self):
         """
@@ -409,7 +376,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[1], 'd')
         self.assertRaises(IndexError, getitem, view, 2)
 
-
     def test_positiveStepNegativeIndices(self):
         """
         Verify that a negative step produces the correct results, skipping over
@@ -420,7 +386,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-1], 'd')
         self.assertEqual(view[-2], 'b')
         self.assertRaises(IndexError, getitem, view, -3)
-
 
     def test_negativeStepPositiveIndices(self):
         """
@@ -433,7 +398,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[1], 'c')
         self.assertRaises(IndexError, getitem, view, 2)
 
-
     def test_negativeStepNegativeIndices(self):
         """
         Verify that a negative step produces the correct results, skipping over
@@ -444,7 +408,6 @@ class SlicedViewTests(TestCase):
         self.assertEqual(view[-1], 'c')
         self.assertEqual(view[-2], 'e')
         self.assertRaises(IndexError, getitem, view, -3)
-
 
     def test_slice(self):
         """

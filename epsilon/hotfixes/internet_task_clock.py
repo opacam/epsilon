@@ -1,22 +1,26 @@
 """
 Fix from Twisted r20480.
 """
-from twisted.internet.task import Clock
+from functools import cmp_to_key
+
 from twisted.internet import base
+from twisted.internet.task import Clock
+
 
 def callLater(self, when, what, *a, **kw):
     """
     Copied from twisted.internet.task.Clock, r20480.  Fixes the bug
     where the wrong DelayedCall would sometimes be returned.
     """
-    dc =  base.DelayedCall(self.seconds() + when,
-                           what, a, kw,
-                           self.calls.remove,
-                           lambda c: None,
-                           self.seconds)
+    dc = base.DelayedCall(self.seconds() + when,
+                          what, a, kw,
+                          self.calls.remove,
+                          lambda c: None,
+                          self.seconds)
     self.calls.append(dc)
-    self.calls.sort(lambda a, b: cmp(a.getTime(), b.getTime()))
+    self.calls.sort(key=lambda x, y: cmp_to_key(x.getTime(), y.getTime()))
     return dc
+
 
 def clockIsBroken():
     """
@@ -30,6 +34,7 @@ def clockIsBroken():
         return True
     else:
         return False
+
 
 def install():
     """

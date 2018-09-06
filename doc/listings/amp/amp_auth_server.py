@@ -7,10 +7,10 @@ addition command.
 
 from sys import stdout
 
-from twisted.python.log import startLogging, msg
-from twisted.internet import reactor
 from twisted.cred.portal import Portal
+from twisted.internet import reactor
 from twisted.protocols.amp import IBoxReceiver, Command, Integer, AMP
+from twisted.python.log import startLogging, msg
 
 from epsilon.ampauth import CredAMPServerFactory, OneTimePadChecker
 
@@ -26,17 +26,16 @@ class Add(Command):
     response = [("sum", Integer())]
 
 
-
 class Adder(AMP):
     """
     An example of an application-defined AMP protocol, the responders defined
     by which should only be available to clients after they have successfully
     authenticated.
     """
+
     def __init__(self, avatarId):
         AMP.__init__(self)
         self.avatarId = avatarId
-
 
     @Add.responder
     def add(self, left, right):
@@ -44,11 +43,11 @@ class Adder(AMP):
         return {'sum': left + right}
 
 
-
 class AdditionRealm(object):
     """
     An example of an application-defined realm.
     """
+
     def requestAvatar(self, avatarId, mind, *interfaces):
         """
         Create Adder avatars for any IBoxReceiver request.
@@ -56,7 +55,6 @@ class AdditionRealm(object):
         if IBoxReceiver in interfaces:
             return (IBoxReceiver, Adder(avatarId), lambda: None)
         raise NotImplementedError()
-
 
 
 def main():
@@ -73,4 +71,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
