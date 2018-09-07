@@ -61,17 +61,27 @@ class JuiceBox(dict):
         return newBox
 
     def serialize(self,
-                  delimiter='\r\n',
-                  escaped='\r\n '):
+                  delimiter=b'\r\n',
+                  escaped=b'\r\n '):
         assert LENGTH not in self
+
+        def to_bytes(val):
+            if isinstance(val, str):
+                return val.encode('ascii')
+            return val
+
+        delimiter, escaped = to_bytes(delimiter), to_bytes(escaped)
 
         L = []
         for (k, v) in self.items():
             if k == BODY:
                 k = LENGTH
-                v = str(len(self[BODY])).encode('ascii')
-            L.append(k.replace('_', '-').title())
-            L.append(': ')
+                v = str(len(self[BODY]))
+
+            k, v = to_bytes(k), to_bytes(v)
+
+            L.append(k.replace(b'_', b'-').title())
+            L.append(b': ')
             L.append(v.replace(delimiter, escaped))
             L.append(delimiter)
 
@@ -79,7 +89,7 @@ class JuiceBox(dict):
         if BODY in self:
             L.append(self[BODY])
 
-        bytes = ''.join(L)
+        bytes = b''.join(L)
         return bytes
 
     def sendTo(self, proto):
